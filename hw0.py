@@ -72,7 +72,7 @@ def initLights():
 def initMaterial():
     emit = [0.0, 0.0, 0.0, 1.0]
     amb  = [0.0, 0.0, 0.0, 1.0]
-    diff = [1.0, 0.0, 0.0, 1.0]
+    diff = [0.0, 0.0, 1.0, 1.0]
     spec = [1.0, 1.0, 1.0, 1.0]
     shiny = 20.0
 
