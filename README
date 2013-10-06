@@ -1,0 +1,10 @@
+Homework 0
+CS 171, Fall 2013
+Eric Pelz
+
+This homework is very simple - it involves downloading sample code from Moodle
+(`hw0.py`), and changing the color of the sphere from red to blue. This allowed
+me to test that OpenGL and Python work in my environment.
+
+To run this homework, simply type `python hw0.py`. This launches a Python app
+with the blue sphere, which you can quit with the `q` key.
