@@ -1,9 +1,12 @@
+# Eric Pelz
+# CS 171: Introduction to Computer Graphics
+
 import ply.lex as lex
 from ply.lex import TOKEN
 import ply.yacc as yacc
 
 from matrix import MatrixExtended
-import sys # TODO REMOVE
+import sys
 tokens = ('TRANSLATION', 'ROTATION', 'SCALEFACTOR', 'NUMBER')
 
 def simpleLexer():
@@ -49,10 +52,9 @@ def simpleParser():
         '''lines : lines line
                  | line'''
         if len(p) == 3: # lines : lines line
-          # TODO: Multiply matrices in the correct order
           p[0] = p[1] + [p[2]]
-        else:
-          p[0] = [p[1]] # lines : line
+        else:           # lines : line
+          p[0] = [p[1]]
 
     def p_line_translation(p):
         '''line : TRANSLATION NUMBER NUMBER NUMBER'''
@@ -73,10 +75,26 @@ def simpleParser():
     # Build the parser
     return yacc.yacc()
 
-simpleLexer() # build lexer
-parser = simpleParser() # build parser
+def parseAndMultiplyTransformations(data, parser):
+  # parse transformations from data
+  transformations = parser.parse(data)
 
-# TODO: Put this in a main, and make it pretty
-data = ''.join(sys.stdin)
-a = parser.parse(data)
-print a
+  # multiply transformations and return the result
+  # Note: we perform a foldr (reduce is foldl, so reverse and multiply opposite)
+  transformations.reverse()
+  return reduce(lambda y,x: x*y, transformations)
+
+if __name__=='__main__':
+  # build lexer and parser
+  simpleLexer()
+  parser = simpleParser()
+
+  # read and parse description of transformation from stdin
+  data = ''.join(sys.stdin)
+  mtx = parseAndMultiplyTransformations(data, parser)
+
+  # print result to stdout
+  for row in mtx.tolist():
+    for elem in row:
+      sys.stdout.write("{:8.4f}".format(elem))
+    sys.stdout.write("\n")

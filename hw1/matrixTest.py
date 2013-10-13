@@ -1,3 +1,7 @@
+# Eric Pelz
+# CS 171: Introduction to Computer Graphics
+
+# TODO: better comments
 """Simple test cases for the custom matrix library"""
 
 from matrix import MatrixExtended

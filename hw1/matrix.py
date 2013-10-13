@@ -17,14 +17,15 @@ class MatrixExtended(np.matrix):
     return self.getT()
 
   #---- Static functions to return transformation matrices ----
-  # TODO: Adds comments for each method
   @staticmethod
   def getTranslationMatrix(tx, ty, tz):
+    """ A static method to return a new translation matrix based on parameters. """
     return MatrixExtended('1 0 0 %f; 0 1 0 %f; 0 0 1 %f; 0 0 0 1' %
       (tx, ty, tz))
 
   @staticmethod
   def getRotationMatrix(x, y, z, angle):
+    """ A static method to return a new rotation matrix based on parameters. """
     xx = x * x
     yy = y * y
     zz = z * z
@@ -42,5 +43,6 @@ class MatrixExtended(np.matrix):
 
   @staticmethod
   def getScalingMatrix(sx, sy, sz):
+    """ A static method to return a new scaling matrix based on parameters. """
     return MatrixExtended('%f 0 0 0; 0 %f 0 0; 0 0 %f 0; 0 0 0 1' %
       (sx, sy, sz))
