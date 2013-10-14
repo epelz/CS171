@@ -20,29 +20,55 @@ class MatrixExtended(np.matrix):
   @staticmethod
   def getTranslationMatrix(tx, ty, tz):
     """ A static method to return a new translation matrix based on parameters. """
-    return MatrixExtended('1 0 0 %f; 0 1 0 %f; 0 0 1 %f; 0 0 0 1' %
-      (tx, ty, tz))
+    return MatrixExtended([
+      [1, 0, 0, tx],
+      [0, 1, 0, ty],
+      [0, 0, 1, tz],
+      [0, 0, 0, 1]])
 
   @staticmethod
   def getRotationMatrix(x, y, z, angle):
     """ A static method to return a new rotation matrix based on parameters. """
+    # impossible to have a rotational matrix around (0, 0 ,0)
+    if x == 0 and y == 0 and z == 0:
+      raise Exception("Cannot have a rotation matrix around (0, 0, 0)")
+
+    # normalize vector
+    vec = MatrixExtended([x, y, z])
+    length = np.linalg.norm(vec)
+    x /= length
+    y /= length
+    z /= length
+
+    # some shortcuts for readability
     xx = x * x
     yy = y * y
     zz = z * z
-    e11 = xx + (1-xx)*math.cos(angle)
-    e12 = x * y * (1 - math.cos(angle)) - z * math.sin(angle)
-    e13 = x * z * (1 - math.cos(angle)) + y * math.sin(angle)
-    e21 = x * y * (1 - math.cos(angle)) + z * math.sin(angle)
-    e22 = yy + (1 - yy)*math.cos(angle)
-    e23 = y * z * (1 - math.cos(angle)) - x * math.sin(angle)
-    e31 = x * z * (1 - math.cos(angle)) - y * math.sin(angle)
-    e32 = y * z * (1 - math.cos(angle)) + x * math.sin(angle)
-    e33 = zz + (1 - zz)*math.cos(angle)
-    return MatrixExtended('%f %f %f 0; %f %f %f 0; %f %f %f 0; 0 0 0 1' %
-      (e11, e12, e13, e21, e22, e23, e31, e32, e33))
+    C = math.cos
+    S = math.sin
+
+    # calculate matrix elements
+    e11 = xx + (1 - xx) * C(angle)
+    e12 = x * y * (1 - C(angle)) - z * S(angle)
+    e13 = x * z * (1 - C(angle)) + y * S(angle)
+    e21 = x * y * (1 - C(angle)) + z * S(angle)
+    e22 = yy + (1 - yy) * C(angle)
+    e23 = y * z * (1 - C(angle)) - x * S(angle)
+    e31 = x * z * (1 - C(angle)) - y * S(angle)
+    e32 = y * z * (1 - C(angle)) + x * S(angle)
+    e33 = zz + (1 - zz) * C(angle)
+
+    return MatrixExtended([
+      [e11, e12, e13, 0],
+      [e21, e22, e23, 0],
+      [e31, e32, e33, 0],
+      [0, 0, 0, 1]])
 
   @staticmethod
   def getScalingMatrix(sx, sy, sz):
     """ A static method to return a new scaling matrix based on parameters. """
-    return MatrixExtended('%f 0 0 0; 0 %f 0 0; 0 0 %f 0; 0 0 0 1' %
-      (sx, sy, sz))
+    return MatrixExtended([
+      [sx, 0, 0, 0],
+      [0, sy, 0, 0],
+      [0, 0, sz, 0],
+      [0, 0, 0, 1]])
