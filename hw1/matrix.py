@@ -12,11 +12,26 @@ class MatrixExtended(np.matrix):
     obj = np.matrix(data).view(cls)
     return obj
 
-  def test(self):
-    # TODO: Remove this before using
+  def getInverse(self):
+    return self.getI()
+    #return np.linalg.inv(self)
+
+  def getTranspose(self):
     return self.getT()
 
-  #---- Static functions to return new transformation matrices ----
+  def mult(self, mat2):
+    return np.dot(self, mat2)
+
+  def dotVector(self, vec2):
+    # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
+    return sum([self[i][0] * vec2[i][0] for i in range(len(self))])
+
+  #---- Static functions to return new matrices ----
+  @staticmethod
+  def getVector(lstOfValues):
+    """ A static method to return a vector with the given list of values. """
+    return MatrixExtended([[v] for v in lstOfValues])
+
   @staticmethod
   def getTranslationMatrix(tx, ty, tz):
     """ A static method to return a new translation matrix based on parameters. """
