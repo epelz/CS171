@@ -3,9 +3,12 @@ CS 171, Fall 2013
 Eric Pelz
 
 Part 0
-===
-Wrote a bunch of unittests to check the relevant areas of my matrix class. More detail
-        about each test can be found in the file `matrixTest.py`.
+======
+Wrote a bunch of unittests to check the relevant areas of my matrix class. A brief overview
+is shown below in the output (all tests pass).
+More detail about each test can be found in the source `matrixTest.py`.
+
+To run the code, simply execute: `python matrixTest.py`.
 ```
 epelz at dhcp-172-237 in ~/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1 (master)
 $ python matrixTest.py
@@ -29,15 +32,15 @@ $ python matrixTest.py
 ```
 
 Part 1
-===
+======
 See `transform4x4.py` and `draw2d.py` for relevant lexars and parsers.
 
 Part 2: A
-===
+=========
 See `transform4x4.py` for transform procedure. Tested with the supplied test code. For example,
-here is `transform2.tf`; the output matches that in `sample_transform`. To run the code, simply
-execute `python transform4x4.py < FILENAME.tf`, as done in this example:
+here is `transform2.tf` and `transform-error-msg.tf`; the output matches that in `sample_transform`.
 
+To run the code, simply execute `python transform4x4.py < INFILE.tf`:
 ```
 epelz at dhcp-172-237 in ~/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1 (master)
 $ python transform4x4.py < ../../extra_files/hw1/hw1_data/transform2.tf
@@ -46,11 +49,31 @@ $ python transform4x4.py < ../../extra_files/hw1/hw1_data/transform2.tf
     1.8627 -0.0346  1.4556  2.0000
    -0.3652  2.5498  1.9769  1.0000
     0.0000  0.0000  0.0000  1.0000
+
+epelz at dhcp-172-237 in ~/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1 (master)
+$ python transform4x4.py < ../../extra_files/hw1/hw1_data/transform-error-msg.tf
+Generating LALR tables
+Traceback (most recent call last):
+  File "transform4x4.py", line 93, in <module>
+    mtx = parseAndMultiplyTransformations(data, parser)
+  File "transform4x4.py", line 79, in parseAndMultiplyTransformations
+    transformations = parser.parse(data)
+  File "/Users/epelz/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1/ply/yacc.py", line 265, in parse
+    return self.parseopt_notrack(input,lexer,debug,tracking,tokenfunc)
+  File "/Users/epelz/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1/ply/yacc.py", line 971, in parseopt_notrack
+    p.callable(pslice)
+  File "transform4x4.py", line 64, in p_line_rotation
+    p[0] = MatrixExtended.getRotationMatrix(p[2], p[3], p[4], p[5])
+  File "/Users/epelz/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1/matrix.py", line 49, in getRotationMatrix
+    raise Exception("Cannot have a rotation matrix around (0, 0, 0)")
+Exception: Cannot have a rotation matrix around (0, 0, 0)
 ```
 
 Part 2: B
-===
-See `draw2d.py` for 2d drawing routines. To run, simply execute `python draw2d.py xMin xMax yMin yMax xRes yRes < INFILE.2d | convert - OUTFILE`.
+=========
+See `draw2d.py` for 2d drawing routines. Tested with the supplied test data, and the pictures look the same.
+
+To run, simply execute `python draw2d.py xMin xMax yMin yMax xRes yRes < INFILE.2d | convert - OUTFILE`.
 
 For example, to draw the nonagons-box:
 ```
