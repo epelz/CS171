@@ -16,7 +16,7 @@ class MatrixExtended(np.matrix):
     # TODO: Remove this before using
     return self.getT()
 
-  #---- Static functions to return transformation matrices ----
+  #---- Static functions to return new transformation matrices ----
   @staticmethod
   def getTranslationMatrix(tx, ty, tz):
     """ A static method to return a new translation matrix based on parameters. """
