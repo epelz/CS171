@@ -46,7 +46,6 @@ def simpleLexer():
 
     return lex.lex()
 
-
 def simpleParser():
     def p_lines(p):
         '''lines : lines line

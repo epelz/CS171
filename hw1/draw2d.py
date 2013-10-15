@@ -40,7 +40,6 @@ def simpleLexer():
 
     return lex.lex()
 
-
 def simpleParser():
     def p_lines(p):
         '''lines : lines line
@@ -74,6 +73,7 @@ def simpleParser():
     return yacc.yacc()
 
 def matchPointPairs(listOfPoints):
+  '''Given a list of points, return pairs of of points which connect them together.'''
   lines = []
   for points in listOfPoints:
     lastPoint = None
@@ -83,7 +83,7 @@ def matchPointPairs(listOfPoints):
       lastPoint = point
   return lines
 
-def calcPixelMatrix(xMin, xMax, yMin, yMax, xRes, yRes, lineSegments):
+def drawLinesToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, lineSegments):
   '''Given a grid, line segments, and target image size, returns a matrix of pixel data.'''
   def pointToPixel(x, y):
     '''Converts a point to its location in the pixel space.'''
@@ -185,6 +185,6 @@ if __name__=='__main__':
   listOfPoints = parser.parse(data)
   lineSegments = matchPointPairs(listOfPoints)
 
-  pixelMatrix = calcPixelMatrix(xMin, xMax, yMin, yMax, xRes, yRes, lineSegments)
+  pixelMatrix = drawLinesToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, lineSegments)
 
   printPPMFormat(xRes, yRes, pixelMatrix)

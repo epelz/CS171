@@ -1,0 +1,59 @@
+Homework 1
+CS 171, Fall 2013
+Eric Pelz
+
+Part 0
+===
+Wrote a bunch of unittests to check the relevant areas of my matrix class. More detail
+        about each test can be found in the file `matrixTest.py`.
+```
+epelz at dhcp-172-237 in ~/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1 (master)
+$ python matrixTest.py
+  testAddition (__main__.TestMatrixExtended)
+  Tests addition of matrices. ... ok
+  testDotProduct (__main__.TestMatrixExtended)
+  Tests the dot product of various vectors. ... ok
+  testInverse (__main__.TestMatrixExtended)
+  Tests the inverse of a matrix. ... ok
+  testMatrixMultiplication (__main__.TestMatrixExtended)
+  Tests the multiplication of various matrices. ... ok
+  testScalingMultiplication (__main__.TestMatrixExtended)
+  Tests scalar multiplication of matrices. ... ok
+  testTranspose (__main__.TestMatrixExtended)
+  Tests the transpose of a matrix. ... ok
+
+  ----------------------------------------------------------------------
+  Ran 6 tests in 0.003s
+
+  OK
+```
+
+Part 1
+===
+See `transform4x4.py` and `draw2d.py` for relevant lexars and parsers.
+
+Part 2: A
+===
+See `transform4x4.py` for transform procedure. Tested with the supplied test code. For example,
+here is `transform2.tf`; the output matches that in `sample_transform`. To run the code, simply
+execute `python transform4x4.py < FILENAME.tf`, as done in this example:
+
+```
+epelz at dhcp-172-237 in ~/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1 (master)
+$ python transform4x4.py < ../../extra_files/hw1/hw1_data/transform2.tf
+  Generating LALR tables
+   -0.6300 -1.5803  3.1580  3.0000
+    1.8627 -0.0346  1.4556  2.0000
+   -0.3652  2.5498  1.9769  1.0000
+    0.0000  0.0000  0.0000  1.0000
+```
+
+Part 2: B
+===
+See `draw2d.py` for 2d drawing routines. To run, simply execute `python draw2d.py xMin xMax yMin yMax xRes yRes < INFILE.2d | convert - OUTFILE`.
+
+For example, to draw the nonagons-box:
+```
+epelz at dhcp-172-237 in ~/Dropbox/School/Caltech/Junior/Fall/CS171/repo/hw1 (master)
+$ python draw2d.py -1.5 1.5 -1.5 1.5 400 400 < ../../extra_files/hw1/hw1_data/nonagons-box.2d | convert - nonagons-box.png
+```
