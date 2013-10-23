@@ -58,6 +58,8 @@ def drawLinesToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, lineSegments):
     yScaling = yRes/(yMax-yMin)
     newX = (x - xMin) * xScaling
     newY = (y - yMin) * yScaling
+    # rotate by 90 degrees (TODO: Why is this necessary?)
+    newX, newY = yRes - newY, newX
     return (int(newX), int(newY))
   def bresenhamAlgorithm(ppt1, ppt2, outMatrix):
     '''Uses Brensenham's Algorithm to determine points to shade in a matrix'''
