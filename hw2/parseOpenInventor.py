@@ -10,11 +10,19 @@ import sys
 
 ### OpenInventor classes ###
 class InventorData():
-  def __init__(self, perspectiveCamera, separator):
+  def __init__(self, perspectiveCamera, separators):
     self.perspectiveCamera = perspectiveCamera
-    self.separator = separator
+    self.separators = separators
+
   def __repr__(self):
-    return "[InventorData: %s, %s]" % (self.perspectiveCamera, self.separator)
+    return "[InventorData: %s, %s]" % (self.perspectiveCamera, self.separators)
+
+  def getSeparators(self):
+    return self.separators
+  def getNumSeparators(self):
+    return len(self.separators)
+  def getPerspectiveCamera(self):
+    return self.perspectiveCamera
 
 class Separator():
   def __init__(self, transforms, coordinate3, indexedFaceSet):
@@ -23,6 +31,19 @@ class Separator():
     self.indexedFaceSet = indexedFaceSet
   def __repr__(self):
     return "[Separator: transforms: %s, coordinate3: %s, indexedfaceset: %s]" % (self.transforms, self.coordinate3, self.indexedFaceSet)
+
+  def getPolygons(self):
+    coords = self.coordinate3.getPoints()
+    polygons = []
+    for indexedFace in self.indexedFaceSet.getFaces():
+      polygons.append([coords[idx] for idx in indexedFace])
+    return polygons
+  def getTransforms(self):
+    return self.transforms
+  def getCoordinate3(self):
+    return self.coordinate3
+  def getIndexedFaceSet(self):
+    return self.indexedFaceSet
 
 class PerspectiveCamera():
   def __init__(self, pos, orien, nearD, farD, left, right, top, bottom):
@@ -37,6 +58,52 @@ class PerspectiveCamera():
   def __repr__(self):
     return "[PerspectiveCamera:  position: %s, orientation: %s, nearDistance: %s, farDistance: %s, left: %s, right: %s, top: %s, bottom: %s]" % \
       (self.pos, self.orien, self.nearD, self.farD, self.left, self.right, self.top, self.bottom)
+
+  def getCameraTransformInverse(self):
+    """Returns (RT)^(-1) = C^(-1); the camera transform."""
+    R = MatrixExtended.getRotationMatrix(*self.orien)
+    T = MatrixExtended.getTranslationMatrix(*self.pos)
+    return T.mult(R).getInverse()
+
+  def getPerspectiveProjection(self):
+    """Returns the perspective projection matrix for this camera transform."""
+    return MatrixExtended.getPerspectiveProjectionMatrix(
+        self.left,
+        self.right,
+        self.bottom,
+        self.top,
+        self.nearD,
+        self.farD)
+
+class TransformBlock():
+  def __init__(self, transformList):
+    self.translation, self.rotation, self.scaleFactor = (None, None, None)
+    for transform in transformList:
+      if transform.transformType == Transform.translation:
+        self.translation = transform
+      elif transform.transformType == Transform.rotation:
+        self.rotation = transform
+      elif transform.transformType == Transform.scaleFactor:
+        self.scaleFactor = transform
+  def __repr__(self):
+    return "[TransformBlock: translation: %s, rotation: %s, scaling: %s]" % (self.translation, self.rotation, self.scaleFactor)
+
+  def multiplyTransformBlock(self):
+    """Returns a matrix built from this transform block (S=TRS)."""
+    result = None
+    if self.scaleFactor:
+      result = self.scaleFactor.getMatrix()
+    if self.rotation:
+      if result is not None:
+        result = self.rotation.getMatrix().mult(result)
+      else:
+        result = self.rotation.getMatrix()
+    if self.translation:
+      if result is not None:
+        result = self.translation.getMatrix().mult(result)
+      else:
+        result = self.translation.getMatrix()
+    return result
 
 class Transform():
   # types of transforms
@@ -54,7 +121,7 @@ class Transform():
     elif self.transformType == self.rotation:
       return MatrixExtended.getRotationMatrix(*self.data)
     elif self.transformType == self.scaleFactor:
-      return MatrixExtended.getRotationMatrix(*self.data)
+      return MatrixExtended.getScalingMatrix(*self.data)
   ## Static methods to initialize new transformation matrices ##
   @staticmethod
   def newTranslation(data):
@@ -72,19 +139,25 @@ class Coordinate3():
   def __repr__(self):
     return "[Coordinate3: %s]" % (str(self.points))
 
+  def getPoints(self):
+    return self.points
+
 class IndexedFaceSet():
   def __init__(self, data):
     # split data to faces, each separated by -1
     faces = [[]]
     for point in data:
       if point >= 0:
-        faces[-1].append(point)
+        faces[-1].append(int(point))
       else:
         faces.append([])
     faces = filter(lambda x: x, faces) # filter out any empty lists
     self.faces = faces
   def __repr__(self):
     return "[IndexedFaceSet: %s]" % (str(self.faces))
+
+  def getFaces(self):
+    return self.faces
 
 ### Parser specific functions ###
 tokens = ('PCAMERA', 'POS', 'ORIENT', 'NDIST', 'FDIST', 'LEFT', 'RIGHT', \
@@ -153,15 +226,15 @@ def simpleParser():
     def p_file(p):
         '''file : blocks'''
         # split to camera/separator and instantiate new object
-        # Note: assumes one camera and one separator
+        # Note: assumes one camera and at least one separator
         camera = None
-        separator = None
+        separators = []
         for group in p[1]:
           if isinstance(group, PerspectiveCamera):
             camera = group
           elif isinstance(group, Separator):
-            separator = group
-        p[0] = InventorData(camera, separator)
+            separators.append(group)
+        p[0] = InventorData(camera, separators)
     def p_blocks(p):
         '''blocks : block
                   | block blocks'''
@@ -235,7 +308,7 @@ def simpleParser():
                    | IFACESET open ifslines close'''
         type = p[1]
         if type == 'Transform':
-          p[0] = p[3]
+          p[0] = TransformBlock(p[3])
         elif type == 'Coordinate3':
           p[0] = Coordinate3(p[5])
         elif type == 'IndexedFaceSet':

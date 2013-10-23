@@ -87,3 +87,19 @@ class MatrixExtended(np.matrix):
       [0, sy, 0, 0],
       [0, 0, sz, 0],
       [0, 0, 0, 1]])
+
+  @staticmethod
+  def getPerspectiveProjectionMatrix(l, r, b, t, n, f):
+    """ A static method to retun a new perspective projection matrix based on parameters. """
+    e11 = 2 * n / (r - l)
+    e13 = (r + l) / (r - l)
+    e22 = (2 * n) / (t - b)
+    e23 = (t + b) / (t - b)
+    e33 = -1 * (f + n) / (f - n)
+    e34 = (-2 * f * n) / (f - n)
+
+    return MatrixExtended([
+      [e11, 0, e13, 0],
+      [0, e22, e23, 0],
+      [0, 0, e33, e34],
+      [0, 0, -1, 0]])
