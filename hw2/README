@@ -1,0 +1,15 @@
+Homework 2
+CS 171, Fall 2013
+Eric Pelz
+
+This assignment contains a 3-D wireframe renderer, using pieces of Homework 0 and 1.
+This contains a few parts: `parseOpenInventor.py` loads the geometry from an OpenInventor file
+into easy-to-use objects. Then, we use the matrix library located in `matrix.py` for transformations,
+and then the 2-D line drawer in `wireframe.py` to finally rasterize the wireframe.
+
+The output image is written to stdout in the PPM file format, so to run this simply use:
+```
+python wireframe.py 400 400 < lion2.iv | convert - lion2.png
+```
+
+The sample test cases (from the website) match the output.
