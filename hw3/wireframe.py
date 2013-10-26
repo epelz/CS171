@@ -36,7 +36,7 @@ def calculatePolygonsFromData(openInventor):
   return transformedPolygons
 
 def matchPointPairs(listOfPoints):
-  '''Given a list of points, return pairs of points which connect them together.'''
+  """Given a list of points, return pairs of points which connect them together."""
   lines = []
   for points in listOfPoints:
     lastPoint = None
@@ -51,9 +51,9 @@ def matchPointPairs(listOfPoints):
   return lines
 
 def drawLinesToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, lineSegments):
-  '''Given a grid, line segments, and target image size, returns a matrix of pixel data.'''
+  """Given a grid, line segments, and target image size, returns a matrix of pixel data."""
   def pointToPixel(x, y):
-    '''Converts a point to its location in the pixel space.'''
+    """Converts a point to its location in the pixel space."""
     xScaling = xRes/(xMax-xMin)
     yScaling = yRes/(yMax-yMin)
     newX = (x - xMin) * xScaling
@@ -62,7 +62,7 @@ def drawLinesToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, lineSegments):
     newX, newY = yRes - newY, newX
     return (int(newX), int(newY))
   def bresenhamAlgorithm(ppt1, ppt2, outMatrix):
-    '''Uses Brensenham's Algorithm to determine points to shade in a matrix'''
+    """Uses Brensenham's Algorithm to determine points to shade in a matrix"""
     # Always start with x1 <= x2
     if ppt1[0] > ppt2[0]:
       ppt1, ppt2 = ppt2, ppt1
