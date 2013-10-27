@@ -4,14 +4,14 @@
 from matrix import MatrixExtended
 
 class InventorData():
-  def __init__(self, perspectiveCamera, pointLight, separators):
+  def __init__(self, perspectiveCamera, pointLights, separators):
     self.perspectiveCamera = perspectiveCamera
-    self.pointLight = pointLight
+    self.pointLights = pointLights
     self.separators = separators
 
   def __repr__(self):
     return "[InventorData: %s, %s, %s]" % \
-        (self.perspectiveCamera, self.pointLight, self.separators)
+        (self.perspectiveCamera, self.pointLights, self.separators)
 
   def getSeparators(self):
     return self.separators
@@ -19,8 +19,8 @@ class InventorData():
     return len(self.separators)
   def getPerspectiveCamera(self):
     return self.perspectiveCamera
-  def getPointLight(self):
-    return self.pointLight
+  def getPointLights(self):
+    return self.pointLights
 
 class Separator():
   def __init__(self, transforms, material, coordinate3, normal, indexedFaceSet):
@@ -34,10 +34,21 @@ class Separator():
         (self.transforms, self.material, self.coordinate3, self.normal, self.indexedFaceSet)
 
   def getPolygons(self):
+    """Returns the (coordinate,normal) for each polygon.
+    Assumes 1:1 mapping of vertex to normals"""
     coords = self.coordinate3.getPoints()
+    cFaces = self.indexedFaceSet.getCFaces()
+    norms = self.normal.getPoints()
+    nFaces = self.indexedFaceSet.getNFaces()
+    assert len(cFaces) == len(nFaces)
+
     polygons = []
-    for indexedFace in self.indexedFaceSet.getFaces():
-      polygons.append([coords[idx] for idx in indexedFace])
+    for faceNum in range(len(cFaces)):
+      assert len(cFaces[faceNum]) == len(nFaces[faceNum])
+      polygons.append(zip(
+        [coords[idx] for idx in cFaces[faceNum]],
+        [norms[idx] for idx in nFaces[faceNum]]))
+    #import sys; print >>sys.stderr, polygons
     return polygons
   def getTransforms(self):
     return self.transforms
@@ -47,6 +58,10 @@ class Separator():
     return self.normal
   def getIndexedFaceSet(self):
     return self.indexedFaceSet
+  def getTransformedNormal(self):
+    return (self.transforms.multiplyNormalTransform()).mult(self.normal)
+  def getMaterial(self):
+    return self.material
 
 class PerspectiveCamera():
   def __init__(self, pos, orien, nearD, farD, left, right, top, bottom):
@@ -62,12 +77,13 @@ class PerspectiveCamera():
     return "[PerspectiveCamera:  position: %s, orientation: %s, nearDistance: %s, farDistance: %s, left: %s, right: %s, top: %s, bottom: %s]" % \
         (self.pos, self.orien, self.nearD, self.farD, self.left, self.right, self.top, self.bottom)
 
+  def getCameraPosition(self):
+    return self.pos
   def getCameraTransformInverse(self):
     """Returns (RT)^(-1) = C^(-1); the camera transform."""
     R = MatrixExtended.getRotationMatrix(*self.orien)
     T = MatrixExtended.getTranslationMatrix(*self.pos)
     return T.mult(R).getInverse()
-
   def getPerspectiveProjection(self):
     """Returns the perspective projection matrix for this camera transform."""
     return MatrixExtended.getPerspectiveProjectionMatrix(
@@ -84,6 +100,11 @@ class PointLight():
     self.color = verifyColor(color)
   def __repr__(self):
     return "[PointLight: location: %s, color: %s]" % (self.location, self.color)
+
+  def getLocation(self):
+    return self.location
+  def getColor(self):
+    return self.color
 
 class TransformBlock():
   def __init__(self, transformList):
@@ -114,6 +135,17 @@ class TransformBlock():
       else:
         result = self.translation.getMatrix()
     return result
+  def multiplyNormalTransform(self):
+    """Returns the matrix Transpose(Inverse(R * S)), which is used to transform normals."""
+    result = None
+    if self.scaleFactor:
+      result = self.scaleFactor.getMatrix()
+    if self.rotation:
+      if result is not None:
+        result = self.rotation.getMatrix().mult(result)
+      else:
+        result = self.rotation.getMatrix()
+    return (result.getI()).getT()
 
 class Transform():
   # types of transforms
@@ -168,8 +200,6 @@ class IndexedFaceSet():
     self.nFaces = splitIntoFaces(normData)
   def __repr__(self):
     return "[IndexedFaceSet: cFaces: %s, nFaces: %s]" % (str(self.cFaces), str(self.nFaces))
-
-  # TODO RENAME IN OTHER FILES
   def getCFaces(self):
     return self.cFaces
   def getNFaces(self):
@@ -184,6 +214,15 @@ class Material():
   def __repr__(self):
     return "[Material: aColor: %s, dColor: %s, sColor: %s, shininess: %s]" % \
         (self.aColor, self.dColor, self.sColor, self.shininess)
+
+  def getSpecularColor(self):
+    return self.sColor
+  def getDiffuseColor(self):
+    return self.dColor
+  def getAmbientColor(self):
+    return self.aColor
+  def getShininess(self):
+    return self.shininess
 
 class Normal():
   def __init__(self, data):

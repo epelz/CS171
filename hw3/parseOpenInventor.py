@@ -95,16 +95,16 @@ def simpleParser():
     # split to camera/separator and instantiate new object
     # Note: assumes one camera, pointlight and at least one separator
     camera = None
-    pointLight = None
+    pointLights = []
     separators = []
     for group in p[1]:
       if isinstance(group, oi.PerspectiveCamera):
         camera = group
       if isinstance(group, oi.PointLight):
-        pointLight = group
+        pointLights.append(group)
       elif isinstance(group, oi.Separator):
         separators.append(group)
-    p[0] = oi.InventorData(camera, pointLight, separators)
+    p[0] = oi.InventorData(camera, pointLights, separators)
   def p_blocks(p):
     '''blocks : block
               | block blocks'''

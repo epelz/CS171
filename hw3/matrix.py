@@ -24,7 +24,32 @@ class MatrixExtended(np.matrix):
 
   def dotVector(self, vec2):
     # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
-    return sum([self[i][0] * vec2[i][0] for i in range(len(self))])
+    return sum([self[i][0] * vec2[i][0] for i in range(len(self))]).tolist()[0][0]
+
+  def crossVector(self, vec2):
+    # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
+    return MatrixExtended(np.cross(self.getTranspose(), vec2.getTranspose())).getTranspose()
+
+  def multiplyVectorComponents(self, vec2):
+    # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
+    return MatrixExtended.getVector(
+        map(lambda (x,y): x[0]*y[0], zip(self.tolist(),vec2.tolist())))
+
+  def getVectorComponent(self, i):
+    # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
+    return self.tolist()[i][0]
+
+  def getVectorNorm(self):
+    # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
+    return sum(map(lambda x: x[0] ** 2, self.tolist())) ** 0.5
+
+  def mapVector(self, f):
+    # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
+    return MatrixExtended.getVector(map(lambda x: f(x[0]), self.tolist()))
+
+  def getVectorList(self):
+    # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
+    return map(lambda x: x[0], self.tolist())
 
   #---- Static functions to return new matrices ----
   @staticmethod
