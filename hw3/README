@@ -1,0 +1,24 @@
+Homework 3
+CS 171, Fall 2013
+Eric Pelz
+
+This assignment contains a shaded convex polygon renderer, extending the
+wireframe renderer created in Homework 2. For each polygon, backface culling
+is used to determine whether the polygon should be drawn, and the Z buffer does
+the polygon depth sorting and intersection. A general lighting function is
+contained in `lighting.py`, and is evoked in one of three shading modes (see below).
+Additionally, the suite uses a triangle rasterizer which interpolates data using barycentric
+coordinates, as described in the course website and text.
+
+The program can use one of three shading modes:
+- n=0 = Flat: Uses one vertex color for the entire polygon
+- n=1 = Gouraud: Interpolate colors linearly between vertices.
+- n=2 = Phong: Linearly interpolate normal vectors and evaluate the lighting model at each pixel.
+
+The program can be envoked using `python shaded.py n xRes yRes < iv-file`, which writes a PPM to stdout.
+
+The code was testing using the test files on the course website, and all seems to work as desired.
+For example, the example cube3 can be generated with Phong mode using:
+```
+python shaded.py 2 400 400 < cube3.iv | convert - cube3_phong.png
+```
