@@ -66,7 +66,3 @@ def calculateLighting(
   assert all(map(lambda n: n >= 0 and n <= 1, rgb))
 
   return rgb
-
-## Specific Lighting Algorithms ##
-def flatShading():
-  pass

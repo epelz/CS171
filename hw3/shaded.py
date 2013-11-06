@@ -20,24 +20,21 @@ class Polygon():
     return self.vertices
 
 class Vertex():
-  def __init__(self, point, transformedPoint, normal, color=None):
-    self.point = point #world space
+  def __init__(self, point, transformedPoint, normal, data=None):
+    self.point = point # world space
     self.transformedPoint = transformedPoint
     self.normal = normal
-    self.color = color
+    self.data = data # data to interpolate during raster (e.g. color, normal)
   def getPt(self):
     return self.point
   def getTransformedPt(self):
     return self.transformedPoint
   def getNormal(self):
     return self.normal
-  def getColor(self):
-    return self.color
-  def setColor(self, color):
-    self.color = color
-  def setColorReturn(self, color):
-    self.color = color
-    return self
+  def getData(self):
+    return self.data
+  def setData(self, data):
+    self.data = data
 
 def calculatePolygonsFromData(openInventor):
   """Given OpenInventor data, return list of Polygon objects."""
@@ -100,8 +97,10 @@ def splitIntoTriangles(polygons):
 
   return concatList(map(getTriples, polygons))
 
-def colorTriangles(triangles, openInventor, n):
-  """Given a list of triangles (Polygons), sets the appropriate color value to the vertices."""
+def addDataToTriangles(triangles, openInventor, n):
+  """Given a list of triangles (Polygons), sets the appropriate vertex data to be interpolated.
+  For flat or gouraud shading, set the desired vertex colors. For phong shading, set the
+  normals. These values will be interpolated during `raster(...)`."""
   def averageComponents(a, b, c):
     avgs = []
     for i in range(0, len(a)):
@@ -109,6 +108,7 @@ def colorTriangles(triangles, openInventor, n):
     return MatrixExtended.getVector(avgs)
 
   if n == 0: # flat shading
+    # store the appropriate color in each vertex (same for each polygon)
     for polygon in triangles:
       vertices = polygon.getVertices()
       separator = polygon.getSeparator()
@@ -125,8 +125,9 @@ def colorTriangles(triangles, openInventor, n):
           cameraPos = MatrixExtended.getVector(openInventor.getPerspectiveCamera().getCameraPosition())
         )
       for v in vertices:
-        v.setColor(rgb)
-  if n == 1: # gouraud shading
+        v.setData(rgb)
+  elif n == 1: # gouraud shading
+    # store the appropriate color in each vertex (to be interpolated)
     for polygon in triangles:
       vertices = polygon.getVertices()
       separator = polygon.getSeparator()
@@ -138,9 +139,18 @@ def colorTriangles(triangles, openInventor, n):
             material = separator.getMaterial(),
             lights = openInventor.getPointLights(),
             cameraPos = MatrixExtended.getVector(openInventor.getPerspectiveCamera().getCameraPosition()))
-        v.setColor(rgb)
+        v.setData(rgb)
+  elif n == 2: # phong shading
+    # store the normal in each vertex (to be interpolated)
+    for polygon in triangles:
+      vertices = polygon.getVertices()
+      separator = polygon.getSeparator()
+      for v in vertices:
+        v.setData(v.getNormal())
+  else:
+    raise ValueError("Unknown shading mode. Only recognizes n=0,1,2.")
 
-def drawToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, triangles):
+def drawToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, n, openInventor, triangles):
   """Given a grid, line segments, and target image size, returns a matrix of pixel data."""
   def pointToPixel(x, y):
     """Converts a point to its location in the pixel space."""
@@ -154,7 +164,7 @@ def drawToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, triangles):
     """Uses backface culling to determine whether to draw a polygon."""
     normal = (v2 - v1).crossVector(v0 - v1)
     return normal.getVectorComponent(2) > 0
-  def raster(verts, outMatrix, zBufferMatrix):
+  def raster(worldVerts, ndcVerts, polygon, outMatrix, zBufferMatrix):
     """Base raster function taken from cs171 website.
     Takes three vertices in arbitrary order, with each
     vertex consisting of an x and y value in the first two data positions, and
@@ -175,13 +185,22 @@ def drawToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, triangles):
         # check the z-buffer (use interpolated barycentric z-coordinate)
         if data[2] < zBufferMatrix[x][y]:
           zBufferMatrix[x][y] = data[2]
-          outMatrix[x][y] = data[3].getVectorList()
+          if n == 0 or n == 1:
+            outMatrix[x][y] = data[3].getVectorList()
+          else:
+            rgb = lighting.calculateLighting(
+              n = data[3],
+              v = MatrixExtended.getVector(data[:3]),
+              material = polygon.getSeparator().getMaterial(),
+              lights = openInventor.getPointLights(),
+              cameraPos = MatrixExtended.getVector(openInventor.getPerspectiveCamera().getCameraPosition()))
+            outMatrix[x][y] = rgb.getVectorList()
 
     xMin = xRes + 1
     yMin = yRes + 1
     xMax = yMax = -1
 
-    coords = [ pointToPixel(vert[0], vert[1]) for vert in verts ]
+    coords = [ pointToPixel(vert[0], vert[1]) for vert in ndcVerts ]
 
     # find the bounding box
     for c in coords:
@@ -211,8 +230,8 @@ def drawToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, triangles):
         if alpha >= 0 and beta >= 0 and gamma >= 0:
           data = []
           # interpolate the data
-          for i in range(len(verts[0])):
-            data.append(alpha * verts[0][i] + beta * verts[1][i] + gamma * verts[2][i])
+          for i in range(len(worldVerts[0])):
+            data.append(alpha * worldVerts[0][i] + beta * worldVerts[1][i] + gamma * worldVerts[2][i])
 
           # and finally, draw the pixel
           if data[2] >= -1:
@@ -226,8 +245,9 @@ def drawToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, triangles):
   for triangle in triangles:
     vertices = map(lambda v: v.getTransformedPt(), triangle.getVertices())
     if shouldDrawPolygon(*vertices): # if n_z > 0 (backface culling)
-      verts = map(lambda v: v.getTransformedPt().getVectorList() + [v.getColor()], triangle.getVertices())
-      raster(verts, pixelMatrix, zBufferMatrix)
+      worldVerts = map(lambda v: v.getPt().getVectorList() + [v.getData()], triangle.getVertices())
+      ndcVerts = map(lambda v: v.getTransformedPt().getVectorList() + [v.getData()], triangle.getVertices())
+      raster(worldVerts, ndcVerts, triangle, pixelMatrix, zBufferMatrix)
 
   return pixelMatrix
 
@@ -260,7 +280,7 @@ if __name__=='__main__':
 
   polygons = calculatePolygonsFromData(openInventor)
   triangles = splitIntoTriangles(polygons)
-  colorTriangles(triangles, openInventor, n)
-  pixelMatrix = drawToNewCanvas(-1, 1, -1, 1, xRes, yRes, triangles)
+  addDataToTriangles(triangles, openInventor, n)
+  pixelMatrix = drawToNewCanvas(-1, 1, -1, 1, xRes, yRes, n, openInventor, triangles)
 
   printPPMFormat(xRes, yRes, pixelMatrix)
