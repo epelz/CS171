@@ -33,6 +33,8 @@ class Vertex():
     return self.normal
   def getColor(self):
     return self.color
+  def setColor(self, color):
+    self.color = color
   def setColorReturn(self, color):
     self.color = color
     return self
@@ -73,8 +75,7 @@ def calculatePolygonsFromData(openInventor):
 
         # transform normal
         normalVec = MatrixExtended.getVector(nPoint + [1.0])
-        normalTransformed = NO.mult(normalVec)[0:3]
-        normalTransformed /= normalTransformed.getVectorNorm()
+        normalTransformed = (NO.mult(normalVec)[0:3]).getVectorUnit()
 
         # instantiate into a Vertex object
         vertices.append(Vertex(
@@ -100,14 +101,12 @@ def splitIntoTriangles(polygons):
   return concatList(map(getTriples, polygons))
 
 def colorTriangles(triangles, openInventor, n):
-  """Given a list of triangles (Polygons), returns the triangles with appropriate coloring values."""
+  """Given a list of triangles (Polygons), sets the appropriate color value to the vertices."""
   def averageComponents(a, b, c):
     avgs = []
     for i in range(0, len(a)):
       avgs.append((a[i][0] + b[i][0] + c[i][0]) / 3.0)
     return MatrixExtended.getVector(avgs)
-
-  coloredTriangles = []
 
   if n == 0: # flat shading
     for polygon in triangles:
@@ -119,14 +118,27 @@ def colorTriangles(triangles, openInventor, n):
       avgNormal = averageComponents(*map(lambda v: v.getNormal().tolist(), vertices))
 
       rgb = lighting.calculateLighting(
-          avgNormal,
-          avgVertex,
-          separator.getMaterial(),
-          openInventor.getPointLights(),
-          MatrixExtended.getVector(openInventor.getPerspectiveCamera().getCameraPosition())
+          n = avgNormal,
+          v = avgVertex,
+          material = separator.getMaterial(),
+          lights = openInventor.getPointLights(),
+          cameraPos = MatrixExtended.getVector(openInventor.getPerspectiveCamera().getCameraPosition())
         )
-      coloredTriangles.append(map(lambda v: v.setColorReturn(rgb), vertices))
-  return coloredTriangles
+      for v in vertices:
+        v.setColor(rgb)
+  if n == 1: # gouraud shading
+    for polygon in triangles:
+      vertices = polygon.getVertices()
+      separator = polygon.getSeparator()
+
+      for v in vertices:
+        rgb = lighting.calculateLighting(
+            n = v.getNormal(),
+            v = v.getPt(),
+            material = separator.getMaterial(),
+            lights = openInventor.getPointLights(),
+            cameraPos = MatrixExtended.getVector(openInventor.getPerspectiveCamera().getCameraPosition()))
+        v.setColor(rgb)
 
 def drawToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, triangles):
   """Given a grid, line segments, and target image size, returns a matrix of pixel data."""
@@ -212,9 +224,9 @@ def drawToNewCanvas(xMin, xMax, yMin, yMax, xRes, yRes, triangles):
 
   # raster each triangle
   for triangle in triangles:
-    vertices = map(lambda v: v.getTransformedPt(), triangle)
+    vertices = map(lambda v: v.getTransformedPt(), triangle.getVertices())
     if shouldDrawPolygon(*vertices): # if n_z > 0 (backface culling)
-      verts = map(lambda v: v.getTransformedPt().getVectorList() + [v.getColor()], triangle)
+      verts = map(lambda v: v.getTransformedPt().getVectorList() + [v.getColor()], triangle.getVertices())
       raster(verts, pixelMatrix, zBufferMatrix)
 
   return pixelMatrix
@@ -248,7 +260,7 @@ if __name__=='__main__':
 
   polygons = calculatePolygonsFromData(openInventor)
   triangles = splitIntoTriangles(polygons)
-  coloredTriangles = colorTriangles(triangles, openInventor, n)
-  pixelMatrix = drawToNewCanvas(-1, 1, -1, 1, xRes, yRes, coloredTriangles)
+  colorTriangles(triangles, openInventor, n)
+  pixelMatrix = drawToNewCanvas(-1, 1, -1, 1, xRes, yRes, triangles)
 
   printPPMFormat(xRes, yRes, pixelMatrix)

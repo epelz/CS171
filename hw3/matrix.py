@@ -51,6 +51,11 @@ class MatrixExtended(np.matrix):
     # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
     return map(lambda x: x[0], self.tolist())
 
+  def getVectorUnit(self):
+    # assumes vectors are of the form MatrixExtended([[1],[2],[3]])
+    norm = self.getVectorNorm()
+    return self / norm if norm != 0.0 else 0.0
+
   #---- Static functions to return new matrices ----
   @staticmethod
   def getVector(lstOfValues):
