@@ -1,6 +1,7 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
+import parseOpenInventor
 import sys
 
 # This function gets called every time the window needs to be updated
@@ -126,17 +127,17 @@ def initGL():
 # returns.
 #
 
-def main():
+def startOpenGL():
     glutInit(sys.argv)
     # Get a double-buffered, depth-buffer-enabled window, with an
     # alpha channel.
     # These options aren't really necessary but are here for examples.
     glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
 
-    glutInitWindowSize(800, 800)
-    glutInitWindowPosition(300, 100)
+    glutInitWindowSize(xRes, yRes)
+    #glutInitWindowPosition(100, 100)
 
-    glutCreateWindow("CS171 HW0")
+    glutCreateWindow("CS171 HW4")
 
     initGL()
 
@@ -149,6 +150,19 @@ def main():
 
     return 1
 
-# run the script
-if __name__ == "__main__":
-    main()
+if __name__=='__main__':
+  # read and parse commandline arguments
+  if len(sys.argv) != 3:
+    print "Error: Incorrect number of parameters. Please call using:"
+    print "\t$ python oglRenderer.py xRes yRes < input.iv"
+    exit(-1)
+  global xRes, yRes
+  xRes, yRes = map(int, sys.argv[1:3])
+
+  # read and parse the OpenInventor file
+  data = ''.join(sys.stdin)
+  global openInventor
+  openInventor = parseOpenInventor.parse(data)
+  print openInventor
+
+  startOpenGL()
