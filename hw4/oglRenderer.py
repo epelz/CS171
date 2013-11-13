@@ -5,6 +5,44 @@ import parseOpenInventor
 import sys
 import math
 
+class Modifier():
+  NONE, PAN, ZOOM = range(3)
+
+class UserInterface():
+  def __init__(self):
+    self.type = Modifier.NONE
+    self.prevX = None
+    self.prevY = None
+
+    self.panX = 0
+    self.panY = 0
+    self.zoom = 0
+
+  def setZoom(self, x, y):
+    self.type = Modifier.ZOOM
+    self.prevX = x
+    self.prevY = y
+  def setPan(self, x, y):
+    self.type = Modifier.PAN
+    self.prevX = x
+    self.prevY = y
+  def unset(self):
+    self.type = Modifier.NONE
+
+  def update(self, x, y):
+    if self.type == Modifier.PAN:
+      self.panX += x - self.prevX
+      self.panY += y - self.prevY
+    elif self.type == Modifier.ZOOM:
+      self.zoom += y - self.prevY
+    self.prevX = x
+    self.prevY = y
+
+  def getPan(self):
+    return (self.panX / float(xRes), -1 * self.panY / float(yRes))
+  def getZoom(self):
+    return -1 * self.zoom / float(yRes)
+
 def toDeg(x): return 360.0 * x / (2 * math.pi)
 
 def redraw():
@@ -16,6 +54,25 @@ def redraw():
   GLUT to do it instead.
   """
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
+  # Get any changes due to mouse motion
+  panX, panY = userInterface.getPan()
+  zoom = userInterface.getZoom()
+
+  camera = openInventor.getPerspectiveCamera()
+  # set up world-space to camera (C) matrix
+  # note: include any relevant panning/zooming
+  glMatrixMode(GL_MODELVIEW)
+  glLoadIdentity()
+  glTranslatef(
+      -1 * camera.pos[0] + panX,
+      -1 * camera.pos[1] + panY,
+      -1 * camera.pos[2] + zoom)
+  glRotatef(
+      toDeg(camera.orien[3]),
+      camera.orien[0],
+      camera.orien[1],
+      camera.orien[2])
 
   for separator in openInventor.getSeparators():
     glPushMatrix()
@@ -87,6 +144,21 @@ def keyfunc(key, x, y):
   if key == 27 or key == 'q' or key == 'Q':
     exit(0)
 
+def mousefunc(button, state, x, y):
+  holdingShift = glutGetModifiers() == GLUT_ACTIVE_SHIFT
+  if state == GLUT_UP:
+    userInterface.unset()
+  elif state == GLUT_DOWN:
+    if button == GLUT_MIDDLE_BUTTON and holdingShift:
+      userInterface.setZoom(x, y)
+    elif button == GLUT_MIDDLE_BUTTON and not holdingShift:
+      userInterface.setPan(x, y)
+
+def motionfunc(x, y):
+  userInterface.update(x, y)
+
+  glutPostRedisplay()
+
 def initLights():
   """
   Sets up an OpenGL light.  This only needs to be called once
@@ -145,7 +217,6 @@ def initGL():
   # Enable depth-buffer test.
   glEnable(GL_DEPTH_TEST)
 
-  # Set up projection and modelview matrices ("camera" settings)
   camera = openInventor.getPerspectiveCamera()
   # set up perspective (P) matrix
   glMatrixMode(GL_PROJECTION)
@@ -158,17 +229,7 @@ def initGL():
       camera.nearD,
       camera.farD)
 
-  # set up world-space to camera (C) matrix
-  glMatrixMode(GL_MODELVIEW)
-  glLoadIdentity()
-  glTranslatef(*map(lambda x: x * -1, camera.pos)) #
-  glRotatef(
-      toDeg(camera.orien[3]),
-      camera.orien[0],
-      camera.orien[1],
-      camera.orien[2])
-
-  # set light parameters
+    # set light parameters
   initLights()
 
 def startOpenGL():
@@ -189,10 +250,15 @@ def startOpenGL():
 
   initGL()
 
+  global userInterface
+  userInterface = UserInterface()
+
   # set up GLUT callbacks.
   glutDisplayFunc(redraw)
   glutReshapeFunc(resize)
   glutKeyboardFunc(keyfunc)
+  glutMouseFunc(mousefunc)
+  glutMotionFunc(motionfunc)
 
   glutMainLoop()
 
