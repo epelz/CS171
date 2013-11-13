@@ -3,6 +3,9 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import parseOpenInventor
 import sys
+import math
+
+def toDeg(x): return 360.0 * x / (2 * math.pi)
 
 def redraw():
   """
@@ -13,7 +16,46 @@ def redraw():
   GLUT to do it instead.
   """
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-  gluSphere(quad, 2.0, 256, 256)
+
+  for separator in openInventor.getSeparators():
+    glPushMatrix()
+
+    # TODO: mouse translate and rotation
+
+    # set material parameters
+    initMaterial(separator.getMaterial())
+
+    for polygon in separator.getPolygons():
+      points, normals = zip(*polygon)
+
+      glPushMatrix()
+
+      # set up camera space to NDC space transforms
+      for transform in separator.getTransforms():
+        if transform.translation:
+          glTranslatef(*transform.translation.data)
+        if transform.rotation:
+          glRotatef(
+              toDeg(transform.rotation.data[3]),
+              transform.rotation.data[0],
+              transform.rotation.data[1],
+              transform.rotation.data[2])
+        if transform.scaleFactor:
+          glScalef(*transform.scaleFactor.data)
+
+      # draw polygon
+      glEnableClientState(GL_VERTEX_ARRAY)
+      glEnableClientState(GL_NORMAL_ARRAY)
+      glVertexPointerf(points)
+      glNormalPointerf(normals)
+      glDrawArrays(GL_POLYGON, 0, len(points))
+      glDisableClientState(GL_NORMAL_ARRAY)
+      glDisableClientState(GL_VERTEX_ARRAY)
+
+      glPopMatrix()
+
+    glPopMatrix()
+
   glutSwapBuffers()
 
 def resize(w, h):
@@ -50,39 +92,43 @@ def initLights():
   Sets up an OpenGL light.  This only needs to be called once
   and the light will be used during all renders.
   """
-  amb      = [ 1.0, 1.0, 1.0, 1.0 ]
-  diff     = [ 1.0, 1.0, 1.0, 1.0 ]
-  spec     = [ 1.0, 1.0, 1.0, 1.0 ]
-  lightpos = [ 2.0, 2.0, 5.0, 1.0 ]
+  assert len(openInventor.getPointLights()) < GL_MAX_LIGHTS
 
-  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb)
-  glLightfv(GL_LIGHT0, GL_AMBIENT, amb)
-  glLightfv(GL_LIGHT0, GL_DIFFUSE, diff)
-  glLightfv(GL_LIGHT0, GL_SPECULAR, spec)
-  glLightfv(GL_LIGHT0, GL_POSITION, lightpos)
-  glEnable(GL_LIGHT0)
+  # set up lights
+  for i, light in enumerate(openInventor.getPointLights()):
+    glLightNum = GL_LIGHT0 + i
 
-  # Turn on lighting.  You can turn it off with a similar call to
-  # glDisable().
+    amb = [ 0.0, 0.0, 0.0, 1.0 ]
+    diff = light.getColor() + [ 1.0 ]
+    spec = light.getColor() + [ 1.0 ]
+    lightPos = light.getLocation() + [ 1.0 ]
+
+    glLightfv(glLightNum + i, GL_AMBIENT, amb)
+    glLightfv(glLightNum + i, GL_DIFFUSE, diff)
+    glLightfv(glLightNum + i, GL_SPECULAR, spec)
+    glLightfv(glLightNum + i, GL_POSITION, lightPos)
+    glEnable(glLightNum + i)
+
+  # turn on lights
   glEnable(GL_LIGHTING);
 
-def initMaterial():
+def initMaterial(material):
   """
   Sets the OpenGL material state.  This is remembered so we only need to
   do this once.  If you want to use different materials, you'd need to do this
   before every different one you wanted to use.
   """
   emit = [0.0, 0.0, 0.0, 1.0]
-  amb  = [0.0, 0.0, 0.0, 1.0]
-  diff = [0.0, 0.0, 1.0, 1.0]
-  spec = [1.0, 1.0, 1.0, 1.0]
-  shiny = 20.0
+  amb  = material.getAmbientColor() + [ 1.0 ] #[0.0, 0.0, 0.0, 1.0]
+  diff = material.getDiffuseColor() + [ 1.0 ] #[0.0, 0.0, 1.0, 1.0]
+  spec = material.getSpecularColor() + [ 1.0 ] #[1.0, 1.0, 1.0, 1.0]
+  shiny = material.getShininess() #20.0
 
   glMaterialfv(GL_FRONT, GL_AMBIENT, amb)
   glMaterialfv(GL_FRONT, GL_DIFFUSE, diff)
   glMaterialfv(GL_FRONT, GL_SPECULAR, spec)
   glMaterialfv(GL_FRONT, GL_EMISSION, emit)
-  glMaterialfv(GL_FRONT, GL_SHININESS, shiny)
+  glMaterialf(GL_FRONT, GL_SHININESS, shiny)
 
 def initGL():
   """
@@ -100,25 +146,30 @@ def initGL():
   glEnable(GL_DEPTH_TEST)
 
   # Set up projection and modelview matrices ("camera" settings)
-  # Look up these functions to see what they're doing.
+  camera = openInventor.getPerspectiveCamera()
+  # set up perspective (P) matrix
   glMatrixMode(GL_PROJECTION)
   glLoadIdentity()
-  glFrustum(-0.5, 0.5, -0.5, 0.5, 1, 10)
+  glFrustum( # multiplies current matrix by perspective matrix
+      camera.left,
+      camera.right,
+      camera.bottom,
+      camera.top,
+      camera.nearD,
+      camera.farD)
+
+  # set up world-space to camera (C) matrix
   glMatrixMode(GL_MODELVIEW)
   glLoadIdentity()
-  gluLookAt(5, 5, 5, 0, 0, 0, 1, 0, 0)
+  glTranslatef(*map(lambda x: x * -1, camera.pos)) #
+  glRotatef(
+      toDeg(camera.orien[3]),
+      camera.orien[0],
+      camera.orien[1],
+      camera.orien[2])
 
   # set light parameters
   initLights()
-
-  # set material parameters
-  initMaterial()
-
-  # initialize the "quadric" used by GLU to render high-level objects.
-  global quad
-  quad = gluNewQuadric()
-  gluQuadricOrientation(quad, GLU_OUTSIDE)
-
 
 def startOpenGL():
   """
@@ -127,13 +178,12 @@ def startOpenGL():
   returns.
   """
   glutInit(sys.argv)
+
   # Get a double-buffered, depth-buffer-enabled window, with an
   # alpha channel.
-  # These options aren't really necessary but are here for examples.
   glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH)
 
   glutInitWindowSize(xRes, yRes)
-  #glutInitWindowPosition(100, 100)
 
   glutCreateWindow("CS171 HW4")
 
@@ -161,6 +211,5 @@ if __name__=='__main__':
   data = ''.join(sys.stdin)
   global openInventor
   openInventor = parseOpenInventor.parse(data)
-  print openInventor
 
   startOpenGL()
