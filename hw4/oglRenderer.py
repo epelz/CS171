@@ -6,7 +6,7 @@ import sys
 import math
 
 class Modifier():
-  NONE, PAN, ZOOM = range(3)
+  NONE, PAN, ZOOM, ROTATE = range(4)
 
 class UserInterface():
   def __init__(self):
@@ -17,6 +17,8 @@ class UserInterface():
     self.panX = 0
     self.panY = 0
     self.zoom = 0
+    self.rotateX = 0
+    self.rotateY = 0
 
   def setZoom(self, x, y):
     self.type = Modifier.ZOOM
@@ -24,6 +26,10 @@ class UserInterface():
     self.prevY = y
   def setPan(self, x, y):
     self.type = Modifier.PAN
+    self.prevX = x
+    self.prevY = y
+  def setRotate(self, x, y):
+    self.type = Modifier.ROTATE
     self.prevX = x
     self.prevY = y
   def unset(self):
@@ -35,6 +41,9 @@ class UserInterface():
       self.panY += y - self.prevY
     elif self.type == Modifier.ZOOM:
       self.zoom += y - self.prevY
+    elif self.type == Modifier.ROTATE:
+      self.rotateX += x - self.prevX
+      self.rotateY += y - self.prevY
     self.prevX = x
     self.prevY = y
 
@@ -42,6 +51,12 @@ class UserInterface():
     return (self.panX / float(xRes), -1 * self.panY / float(yRes))
   def getZoom(self):
     return -1 * self.zoom / float(yRes)
+  def getRotate(self):
+    """Returns thetaX, thetaY: the angle of rotation for x and y axes.
+    Note: swap components because rotation should be perpendicular to drag line."""
+    thetaX = self.rotateX / float(xRes)
+    thetaY = self.rotateY / float(yRes)
+    return (thetaY, thetaX)
 
 def toDeg(x): return 360.0 * x / (2 * math.pi)
 
@@ -58,18 +73,19 @@ def redraw():
   # Get any changes due to mouse motion
   panX, panY = userInterface.getPan()
   zoom = userInterface.getZoom()
+  rotateX, rotateY = userInterface.getRotate()
 
   camera = openInventor.getPerspectiveCamera()
   # set up world-space to camera (C) matrix
   # note: include any relevant panning/zooming
   glMatrixMode(GL_MODELVIEW)
   glLoadIdentity()
-  glTranslatef(
+  glTranslatef( # TODO seems that problem with lion2 is here...
       -1 * camera.pos[0] + panX,
       -1 * camera.pos[1] + panY,
       -1 * camera.pos[2] + zoom)
   glRotatef(
-      toDeg(camera.orien[3]),
+      -1 * toDeg(camera.orien[3]),
       camera.orien[0],
       camera.orien[1],
       camera.orien[2])
@@ -77,7 +93,9 @@ def redraw():
   for separator in openInventor.getSeparators():
     glPushMatrix()
 
-    # TODO: mouse translate and rotation
+    # perform any rotations due to mouse motion
+    glRotatef(toDeg(rotateX), 1.0, 0.0, 0.0)
+    glRotatef(toDeg(rotateY), 0.0, 1.0, 0.0)
 
     # set material parameters
     initMaterial(separator.getMaterial())
@@ -153,6 +171,8 @@ def mousefunc(button, state, x, y):
       userInterface.setZoom(x, y)
     elif button == GLUT_MIDDLE_BUTTON and not holdingShift:
       userInterface.setPan(x, y)
+    elif button == GLUT_LEFT_BUTTON:
+      userInterface.setRotate(x, y)
 
 def motionfunc(x, y):
   userInterface.update(x, y)
@@ -229,7 +249,7 @@ def initGL():
       camera.nearD,
       camera.farD)
 
-    # set light parameters
+  # set light parameters
   initLights()
 
 def startOpenGL():
@@ -250,6 +270,7 @@ def startOpenGL():
 
   initGL()
 
+  # initialize UserInterface to handle mouse/keyboard transformations
   global userInterface
   userInterface = UserInterface()
 
