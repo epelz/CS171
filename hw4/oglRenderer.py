@@ -21,8 +21,8 @@ class UserInterface():
     self.rotateX = 0
     self.rotateY = 0
 
-  def toggleShade(self):
-    self.shade = not self.shade
+  def setShade(self, val):
+    self.shade = val
   def shouldShade(self):
     return self.shade
 
@@ -168,8 +168,16 @@ def keyfunc(key, x, y):
   """
   if key == 27 or key == 'q' or key == 'Q':
     exit(0)
-  elif key == 's' or key == 'S':
-    userInterface.toggleShade()
+  elif key == 'w' or key == 'W':
+    userInterface.setShade(False)
+    glutPostRedisplay()
+  elif key == 'g' or key == 'G':
+    userInterface.setShade(True)
+    glShadeModel(GL_SMOOTH)
+    glutPostRedisplay()
+  elif key == 'f' or key == 'F':
+    userInterface.setShade(True)
+    glShadeModel(GL_FLAT)
     glutPostRedisplay()
 
 def mousefunc(button, state, x, y):
