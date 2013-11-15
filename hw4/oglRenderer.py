@@ -80,15 +80,15 @@ def redraw():
   # note: include any relevant panning/zooming
   glMatrixMode(GL_MODELVIEW)
   glLoadIdentity()
-  glTranslatef( # TODO seems that problem with lion2 is here...
-      -1 * camera.pos[0] + panX,
-      -1 * camera.pos[1] + panY,
-      -1 * camera.pos[2] + zoom)
   glRotatef(
       -1 * toDeg(camera.orien[3]),
       camera.orien[0],
       camera.orien[1],
       camera.orien[2])
+  glTranslatef(
+      -1 * camera.pos[0] + panX,
+      -1 * camera.pos[1] + panY,
+      -1 * camera.pos[2] + zoom)
 
   for separator in openInventor.getSeparators():
     glPushMatrix()
