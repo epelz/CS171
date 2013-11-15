@@ -11,6 +11,7 @@ class Modifier():
 class UserInterface():
   def __init__(self):
     self.type = Modifier.NONE
+    self.shade = True
     self.prevX = None
     self.prevY = None
 
@@ -19,6 +20,11 @@ class UserInterface():
     self.zoom = 0
     self.rotateX = 0
     self.rotateY = 0
+
+  def toggleShade(self):
+    self.shade = not self.shade
+  def shouldShade(self):
+    return self.shade
 
   def setZoom(self, x, y):
     self.type = Modifier.ZOOM
@@ -123,7 +129,10 @@ def redraw():
       glEnableClientState(GL_NORMAL_ARRAY)
       glVertexPointerf(points)
       glNormalPointerf(normals)
-      glDrawArrays(GL_POLYGON, 0, len(points))
+      if userInterface.shouldShade():
+        glDrawArrays(GL_POLYGON, 0, len(points))
+      else:
+        glDrawArrays(GL_LINE_LOOP, 0, len(points))
       glDisableClientState(GL_NORMAL_ARRAY)
       glDisableClientState(GL_VERTEX_ARRAY)
 
@@ -159,6 +168,9 @@ def keyfunc(key, x, y):
   """
   if key == 27 or key == 'q' or key == 'Q':
     exit(0)
+  elif key == 's' or key == 'S':
+    userInterface.toggleShade()
+    glutPostRedisplay()
 
 def mousefunc(button, state, x, y):
   holdingShift = glutGetModifiers() == GLUT_ACTIVE_SHIFT
