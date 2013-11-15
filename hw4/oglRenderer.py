@@ -70,53 +70,53 @@ def redraw():
   """
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+  # Load identity matrix for GL_MODELVIEW
+  glMatrixMode(GL_MODELVIEW)
+  glLoadIdentity()
+
   # Get any changes due to mouse motion
   panX, panY = userInterface.getPan()
   zoom = userInterface.getZoom()
-  rotateX, rotateY = userInterface.getRotate()
+  glTranslatef( panX, panY, zoom)
 
-  camera = openInventor.getPerspectiveCamera()
   # set up world-space to camera (C) matrix
-  # note: include any relevant panning/zooming
-  glMatrixMode(GL_MODELVIEW)
-  glLoadIdentity()
+  camera = openInventor.getPerspectiveCamera()
   glRotatef(
       -1 * toDeg(camera.orien[3]),
       camera.orien[0],
       camera.orien[1],
       camera.orien[2])
   glTranslatef(
-      -1 * camera.pos[0] + panX,
-      -1 * camera.pos[1] + panY,
-      -1 * camera.pos[2] + zoom)
+      -1 * camera.pos[0],
+      -1 * camera.pos[1],
+      -1 * camera.pos[2])
+
+  # perform any rotations due to mouse motion
+  rotateX, rotateY = userInterface.getRotate()
+  glRotatef(toDeg(rotateX), 1.0, 0.0, 0.0)
+  glRotatef(toDeg(rotateY), 0.0, 1.0, 0.0)
 
   for separator in openInventor.getSeparators():
     glPushMatrix()
 
-    # perform any rotations due to mouse motion
-    glRotatef(toDeg(rotateX), 1.0, 0.0, 0.0)
-    glRotatef(toDeg(rotateY), 0.0, 1.0, 0.0)
-
     # set material parameters
     initMaterial(separator.getMaterial())
 
+    # set up camera space to NDC space transforms
+    for transform in separator.getTransforms():
+      if transform.translation:
+        glTranslatef(*transform.translation.data)
+      if transform.rotation:
+        glRotatef(
+            toDeg(transform.rotation.data[3]),
+            transform.rotation.data[0],
+            transform.rotation.data[1],
+            transform.rotation.data[2])
+      if transform.scaleFactor:
+        glScalef(*transform.scaleFactor.data)
+
     for polygon in separator.getPolygons():
       points, normals = zip(*polygon)
-
-      glPushMatrix()
-
-      # set up camera space to NDC space transforms
-      for transform in separator.getTransforms():
-        if transform.translation:
-          glTranslatef(*transform.translation.data)
-        if transform.rotation:
-          glRotatef(
-              toDeg(transform.rotation.data[3]),
-              transform.rotation.data[0],
-              transform.rotation.data[1],
-              transform.rotation.data[2])
-        if transform.scaleFactor:
-          glScalef(*transform.scaleFactor.data)
 
       # draw polygon
       glEnableClientState(GL_VERTEX_ARRAY)
@@ -126,8 +126,6 @@ def redraw():
       glDrawArrays(GL_POLYGON, 0, len(points))
       glDisableClientState(GL_NORMAL_ARRAY)
       glDisableClientState(GL_VERTEX_ARRAY)
-
-      glPopMatrix()
 
     glPopMatrix()
 
