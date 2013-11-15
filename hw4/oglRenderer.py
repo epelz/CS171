@@ -163,8 +163,7 @@ def resize(w, h):
 
 def keyfunc(key, x, y):
   """
-  GLUT calls this function when a key is pressed. Here we just quit when ESC or
-  'q' is pressed.
+  GLUT calls this function when a key is pressed.
   """
   if key == 27 or key == 'q' or key == 'Q':
     exit(0)
@@ -225,8 +224,7 @@ def initLights():
 def initMaterial(material):
   """
   Sets the OpenGL material state.  This is remembered so we only need to
-  do this once.  If you want to use different materials, you'd need to do this
-  before every different one you wanted to use.
+  do this once.
   """
   emit = [0.0, 0.0, 0.0, 1.0]
   amb  = material.getAmbientColor() + [ 1.0 ] #[0.0, 0.0, 0.0, 1.0]
@@ -243,7 +241,7 @@ def initMaterial(material):
 def initGL():
   """
   Set up OpenGL state.  This does everything so when we draw we only need to
-  actually draw the sphere, and OpenGL remembers all of our other settings.
+  actually draw the object, and OpenGL remembers all of our other settings.
   """
   # Tell openGL to use Gouraud shading:
   glShadeModel(GL_SMOOTH)
