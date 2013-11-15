@@ -1,0 +1,23 @@
+Homework 4
+CS 171, Fall 2013
+Eric Pelz
+
+This assignment contains a shaded renderer in OpenGL. It is a rewrite of the solution from
+homework 3, but is also extended so that the user can examine (rotate, translate, and zoom) 
+rendered object. The input format is OpenInventor, as in Homework 3. However, OpenGL
+replaces the tedious work of rasterizing polygons and manually computing lighting functions.
+
+The program can toggle among one of three shading modes with the press of a key:
+  Wireframe (w), Flat (f), Gouraud (g)
+
+The program can also rotate, translate, and zoom the object:
+- Rotate by clicking and dragging using the left mouse button. This uses a simple approach
+  by rotating the image by an amount proportional to the length of the mouse drag.
+- Translate by clicking and dragging with the middle mouse button. The magnitude is proportional
+  to the length of the mouse drag, and direction that of the mouse drag.
+- Zoom by pressing shift and dragging with the middle mouse button. The magnitude is proportional
+  to the vertical displacement of the mouse drag.
+
+The program can be envoked using `python oglRenderer.py xRes yRes < iv-file`.
+
+The code was testing using the test files on the course website, and all seems to work as desired.
