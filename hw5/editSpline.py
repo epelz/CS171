@@ -13,6 +13,7 @@ class Nurbs():
     self.k = 4
 
     self.curSelected = None
+    self.control = True
   def coxDeBoor(self):
     def addVertices(v1, v2): return [v1[i] + v2[i] for i in range(len(v1))]
     def multVertex(v, c): return map(lambda x: x * c, v)
@@ -76,7 +77,7 @@ def redraw():
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
   drawSpline()
-  drawControlPoints()
+  if NURBS.control: drawControlPoints()
 
   glutSwapBuffers()
 
@@ -114,10 +115,16 @@ def pixelToCoord(x, y):
 def keyfunc(key, x, y):
   if key == 27 or key == 'q' or key == 'Q':
     exit(0)
+  elif key == 'c' or key == 'C':
+    NURBS.control = not NURBS.control
+    if not NURBS.control:
+      NURBS.curSelected = None
+    glutPostRedisplay()
 
 def mousefunc(button, state, x, y):
   if state == GLUT_DOWN:
     if button == GLUT_LEFT_BUTTON:
+      if not NURBS.control: return
       nx, ny = pixelToCoord(x, y)
       # check if selecting a control point
       for i, (vx, vy) in enumerate(NURBS.vertices):
