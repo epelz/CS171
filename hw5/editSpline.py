@@ -27,13 +27,11 @@ class Nurbs():
         N[i][1] = 1 if self.knots[i] <= u and u < self.knots[i+1] else 0
       # recursive cases: k
       for k in range(2, self.k+1):
-        #print N
         for i in range(n):
           num1 = (u - self.knots[i]) * N[i][k - 1]
           den1 = self.knots[i + k - 1] - self.knots[i]
           num2 = 0 if i + 1 >= n else ((self.knots[i + k] - u) * N[i + 1][k - 1])
           den2 = self.knots[i + k] - self.knots[i + 1]
-          #print '\t\t', num1, den1, num2, den2
 
           term1 = 0 if num1 == 0 and den1 == 0 else num1 / float(den1)
           term2 = 0 if num2 == 0 and den2 == 0 else num2 / float(den2)
@@ -43,7 +41,6 @@ class Nurbs():
       # calculate the spline of order k
       pt = (0,0)
       for i in range(n):
-        #print '\t', self.vertices[i], N[i][self.k], multVertex(self.vertices[i], N[i][self.k])
         pt = addVertices(pt, multVertex(self.vertices[i], N[i][self.k]))
       pts.append((u, pt))
     return pts
@@ -100,6 +97,11 @@ def resize(w, h):
 
   # reset the current viewport and perspective transformation
   glViewport(0, 0, w, h)
+
+  # TODO: FIX RESIZING!
+  global xRes, yRes
+  xRes = w
+  yRes = h
 
   # tell GLUT to call the redrawing function, in this case redraw()
   glutPostRedisplay()
