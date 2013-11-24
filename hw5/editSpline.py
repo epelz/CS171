@@ -5,6 +5,9 @@ import sys
 import math
 import numpy as np
 
+def addVertices(v1, v2): return [v1[i] + v2[i] for i in range(len(v1))]
+def multVertex(v, c): return map(lambda x: x * c, v)
+
 class Nurbs():
   def __init__(self):
     self.knots = [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]
@@ -12,12 +15,11 @@ class Nurbs():
     self.du = 0.005
     self.k = 4
 
+    self.lastCDB = None # last output from Cox de Boor
     self.curSelected = None
     self.control = True
-  def coxDeBoor(self):
-    def addVertices(v1, v2): return [v1[i] + v2[i] for i in range(len(v1))]
-    def multVertex(v, c): return map(lambda x: x * c, v)
 
+  def coxDeBoor(self):
     pts = []
     n = len(self.vertices)
     for u in np.arange(0, 1.0, self.du):
@@ -44,9 +46,46 @@ class Nurbs():
       for i in range(n):
         pt = addVertices(pt, multVertex(self.vertices[i], N[i][self.k]))
       pts.append((u, pt))
+    self.lastCDB = pts
     return pts
   def updateVert(self, x, y):
     self.vertices[self.curSelected] = (x, y)
+  def insertKnotCP(self, newKnot):
+    """ Inserts a new knot and control point in the appropriate location. """
+    assert self.knots[0] <= newKnot
+
+    newKnotLoc = None
+    # add new knot in the correct location
+    for i in range(len(self.knots)):
+      if self.knots[i] >= newKnot:
+        self.knots.insert(i, newKnot)
+        newKnotLoc = i
+        break
+    assert newKnotLoc is not None
+
+    # update control points
+    oldCP = self.vertices[:]
+    self.vertices = []
+
+    n = len(self.knots) - self.k - 1
+
+    # calculate coefficients
+    a = np.zeros(n+1)
+    for i in range(1,n+1):
+      if i <= newKnotLoc - self.k:
+        a[i] = 1
+      elif i <= newKnotLoc:
+        a[i] = (newKnot - self.knots[i]) / (self.knots[i + self.k] - self.knots[i])
+      else:
+        a[i] = 0
+
+    # calculate points
+    self.vertices.append(oldCP[0])
+    for i in range(1,n):
+      term1 = multVertex(oldCP[i - 1], (1 - a[i]))
+      term2 = multVertex(oldCP[i], a[i])
+      self.vertices.append(addVertices(term1, term2))
+    self.vertices.append(oldCP[n-1])
 
 def redraw():
   """
@@ -134,17 +173,40 @@ def keyfunc(key, x, y):
     glutPostRedisplay()
 
 def mousefunc(button, state, x, y):
+  def dist(pt1, pt2):
+    return math.sqrt((pt1[0] - pt2[0]) ** 2 + (pt1[1] - pt2[1]) ** 2)
+  def trySelectControlPoint():
+    """ Checks if a user clicked on a control point. If so, then select it."""
+    nx, ny = pixelToCoord(x, y)
+    # check control points to see if one was clicked
+    for i, (vx, vy) in enumerate(NURBS.vertices):
+      if abs(nx - vx) < 1.25*wid and abs(ny - vy) < 1.25*wid:
+        NURBS.curSelected = i
+  def findKnotValue():
+    """ Finds the value of a new knot. Assumes the user clicked "near" a curve,
+        and therefore finds the point on the curve that is closest to the click. Uses
+        this u value to approximate the value of the new knot."""
+    closestU = None
+    closestDist = None
+    for (u,pt) in NURBS.lastCDB:
+      dst = dist(pixelToCoord(x,y),pt)
+      if closestDist is None or dst < closestDist:
+        closestU = u
+        closestDist = dst
+    return closestU
+
+  # If disable control point manipulation, then return.
+  if not NURBS.control: return
+
   if state == GLUT_DOWN:
     if button == GLUT_LEFT_BUTTON:
-      if not NURBS.control: return
-      nx, ny = pixelToCoord(x, y)
-      # check if selecting a control point
-      for i, (vx, vy) in enumerate(NURBS.vertices):
-        if abs(nx - vx) < 1.25*wid and abs(ny - vy) < 1.25*wid:
-          NURBS.curSelected = i
+      trySelectControlPoint()
     elif button == GLUT_RIGHT_BUTTON:
-      pass
-  if state == GLUT_UP:
+      newKnot = findKnotValue()
+      NURBS.insertKnotCP(newKnot)
+      glutPostRedisplay()
+
+  elif state == GLUT_UP:
     NURBS.curSelected = None
 
 def motionfunc(x, y):
