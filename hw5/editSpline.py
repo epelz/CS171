@@ -9,7 +9,7 @@ class Nurbs():
   def __init__(self):
     self.knots = [0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0]
     self.vertices = [(-0.5, 0.5), (-0.5, -0.5), (0.5, -0.5), (0.5, 0.5)]
-    self.du = 0.01
+    self.du = 0.005
     self.k = 4
 
     self.curSelected = None
@@ -60,18 +60,30 @@ def redraw():
     upts = NURBS.coxDeBoor()
     pts = map(lambda x: x[1], upts)
 
+    glLineWidth(2)
+
     glEnableClientState(GL_VERTEX_ARRAY)
     glVertexPointerf(pts)
     glDrawArrays(GL_LINE_STRIP, 0, len(pts))
     glDisableClientState(GL_VERTEX_ARRAY)
+
+    glLineWidth(1)
   def drawControlPoints():
     glColor3f(0.5, 0.0, 1.0)
+
+    # draw control points as small squares
     for (x,y) in NURBS.vertices:
       glEnableClientState(GL_VERTEX_ARRAY)
       verts = [(x-wid, y-wid), (x-wid, y+wid), (x+wid, y+wid), (x+wid, y-wid)]
       glVertexPointerf(verts)
       glDrawArrays(GL_QUADS, 0, len(verts))
       glDisableClientState(GL_VERTEX_ARRAY)
+    # connect control points with thin lines
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glVertexPointerf(NURBS.vertices)
+    glDrawArrays(GL_LINE_STRIP, 0, len(NURBS.vertices))
+    glDisableClientState(GL_VERTEX_ARRAY)
+
     glColor3f(1.0, 1.0, 1.0)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
