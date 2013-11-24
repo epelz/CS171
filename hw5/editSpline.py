@@ -3,6 +3,7 @@ from OpenGL.GLUT import *
 from OpenGL.GLU import *
 import sys
 import math
+import pickle
 import numpy as np
 
 def addVertices(v1, v2): return [v1[i] + v2[i] for i in range(len(v1))]
@@ -18,6 +19,7 @@ class Nurbs():
     self.lastCDB = None # last output from Cox de Boor
     self.curSelected = None
     self.control = True
+    self.filename = 'output.p'
 
   def coxDeBoor(self):
     pts = []
@@ -171,6 +173,9 @@ def keyfunc(key, x, y):
     if not NURBS.control:
       NURBS.curSelected = None
     glutPostRedisplay()
+  elif key == 'e' or key == 'E':
+    pickle.dump(NURBS, open(NURBS.filename, "wb"))
+    print "NURBS state exported as \"%s\"." % (NURBS.filename)
 
 def mousefunc(button, state, x, y):
   def dist(pt1, pt2):
@@ -239,19 +244,27 @@ def startOpenGL():
   glutMouseFunc(mousefunc)
   glutMotionFunc(motionfunc)
 
-  global NURBS
-  NURBS = Nurbs()
-
   glutMainLoop()
 
   return 1
 
 if __name__=='__main__':
   # read and parse commandline arguments
-  if len(sys.argv) != 3:
+  global NURBS
+  if len(sys.argv) == 3:
+    NURBS = Nurbs()
+  elif len(sys.argv) == 4:
+    # try to load file. If it doesn't exist, then we'll make it after exporting.
+    try:
+      NURBS = pickle.load(open(sys.argv[3], "rb"))
+    except IOError:
+      NURBS = Nurbs()
+      NURBS.filename = sys.argv[3]
+  else:
     print "Error: Incorrect number of parameters. Please call using:"
-    print "\t$ python editSpline.py xRes yRes"
+    print "\t$ python editSpline.py xRes yRes [<spline-file>]"
     exit(-1)
+
   global xRes, yRes
   xRes, yRes = map(int, sys.argv[1:3])
 

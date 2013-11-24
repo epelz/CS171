@@ -14,11 +14,21 @@ inserted directly. The control points are then adjusted so that the spline itsel
 This allows the user to insert knots and automatically change control points, thereby adding
 new tuning abilities to their spline.
 
-[EXTRA CREDIT]
+[EXTRA CREDIT] Toggle editing mode
 The `c`/`C` key toggles the control mode. That is, to disable the ability to move control points or
 add new knots, and to hide the control poly-line itself. This way, one can see the spline by itself,
 then re-enable control mode and manipulate, and disable again to see the spline once again.
 
-The program can be envoked using `python editSpline.py xRes yRes`.
+[EXTRA CREDIT] Import/Export capabilities
+New optional filename parameter to specify a file to import state from. Then, the `e`/`E` key exports the
+current NURBS state to the given file, including all control points, knots, and whether the control mode
+is toggled. If no such file exists, then this file is used to export state.
+If no filename is given, then exporting state goes to a default "output.p".
+
+Note: these two extra credits make this program much more useful. The NURBS Editor can be used to create
+splines and then display them without their control points, and then the state can be exported/imported
+for further development/use.
+
+The program can be envoked using `python editSpline.py xRes yRes [<spline-file>]`.
 
 The code was tested, and all seems to work as desired.
