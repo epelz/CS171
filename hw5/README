@@ -1,0 +1,24 @@
+Homework 5
+CS 171, Fall 2013
+Eric Pelz
+
+This assignment contains a NURBS Editor in OpenGL: An interactive, two-dimensional B-Spline
+editor which allows the user to insert and manipulate control points for a nonuniform B-Spline
+of order 4.
+
+The editor displays both the spline curve (in white) and the control poly-line (in purple). It
+begins with a predefined spline of 4 points in a U shape. Control points can be moved by
+left-clicking and dragging the points. This alters the control poly-line and thus the spline curve.
+Knots can be inserting by right-clicking: the x-y point is converted to a knot value, which is
+inserted directly. The control points are then adjusted so that the spline itself is unchanged.
+This allows the user to insert knots and automatically change control points, thereby adding
+new tuning abilities to their spline.
+
+[EXTRA CREDIT]
+The `c`/`C` key toggles the control mode. That is, to disable the ability to move control points or
+add new knots, and to hide the control poly-line itself. This way, one can see the spline by itself,
+then re-enable control mode and manipulate, and disable again to see the spline once again.
+
+The program can be envoked using `python editSpline.py xRes yRes`.
+
+The code was tested, and all seems to work as desired.
