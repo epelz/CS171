@@ -152,10 +152,12 @@ def resize(w, h):
   # reset the current viewport and perspective transformation
   glViewport(0, 0, w, h)
 
-  # TODO: FIX RESIZING!
   global xRes, yRes
   xRes = w
   yRes = h
+  global wid
+  wid = min(xRes, yRes) / 25000.0
+
 
   # tell GLUT to call the redrawing function, in this case redraw()
   glutPostRedisplay()
