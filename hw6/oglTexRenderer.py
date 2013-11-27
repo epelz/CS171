@@ -4,6 +4,7 @@ from OpenGL.GLU import *
 import parseOpenInventor
 import sys
 import math
+import pygame
 
 class Modifier():
   NONE, PAN, ZOOM, ROTATE = range(4)
@@ -108,6 +109,9 @@ def redraw():
     # set material parameters
     if separator.hasMaterial():
       initMaterial(separator.getMaterial())
+    else:
+      glEnable(GL_TEXTURE_2D)
+      tex = initTexture(separator.getTexture2Path())
 
     # set up camera space to NDC space transforms
     for transform in separator.getTransforms():
@@ -140,7 +144,13 @@ def redraw():
         glDisableClientState(GL_VERTEX_ARRAY)
       # if no material, then use textures
       else:
-        pass
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_TEXTURE_COORD_ARRAY)
+        glVertexPointerf(points)
+        glTexCoordPointer(2, GL_FLOAT, 0, points2)
+        glDrawArrays(GL_POLYGON, 0, len(points))
+        glDisableClientState(GL_TEXTURE_COORD_ARRAY)
+        glDisableClientState(GL_VERTEX_ARRAY)
 
     glPopMatrix()
 
@@ -244,6 +254,26 @@ def initMaterial(material):
   glMaterialfv(GL_FRONT, GL_EMISSION, emit)
   glMaterialf(GL_FRONT, GL_SHININESS, shiny)
 
+def initTexture(imagePath):
+  """
+  Sets the OpenGL texture state. Returns the texture so can use later.
+  """
+  texture = pygame.image.load(imagePath)
+  textureData = pygame.image.tostring(texture, "RGBA", 1)
+
+  tWidth = texture.get_width()
+  tHeight = texture.get_height()
+
+  glTex = glGenTextures(1)
+  glBindTexture(GL_TEXTURE_2D, glTex)
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tWidth, tHeight, 0, GL_RGBA,
+      GL_UNSIGNED_BYTE, textureData)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+
+  return glTex
+
+
 def initGL():
   """
   Set up OpenGL state.  This does everything so when we draw we only need to
@@ -289,7 +319,7 @@ def startOpenGL():
 
   glutInitWindowSize(xRes, yRes)
 
-  glutCreateWindow("CS171 HW4")
+  glutCreateWindow("CS171 HW6")
 
   initGL()
 

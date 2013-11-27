@@ -74,8 +74,8 @@ class Separator():
     return self.material
   def hasMaterial(self):
     return self.material is not None
-  def getTexture2(self):
-    return self.texture2
+  def getTexture2Path(self):
+    return self.texture2.getFilename()
   def getTextureCoordinate2(self):
     return self.tcoordinate2
 
