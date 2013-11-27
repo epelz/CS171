@@ -106,7 +106,8 @@ def redraw():
     glPushMatrix()
 
     # set material parameters
-    initMaterial(separator.getMaterial())
+    if separator.hasMaterial():
+      initMaterial(separator.getMaterial())
 
     # set up camera space to NDC space transforms
     for transform in separator.getTransforms():
@@ -122,19 +123,24 @@ def redraw():
         glScalef(*transform.scaleFactor.data)
 
     for polygon in separator.getPolygons():
-      points, normals = zip(*polygon)
+      points, points2 = zip(*polygon)
+      # Note: points2 is normals if material, or is textures otherwise
 
-      # draw polygon
-      glEnableClientState(GL_VERTEX_ARRAY)
-      glEnableClientState(GL_NORMAL_ARRAY)
-      glVertexPointerf(points)
-      glNormalPointerf(normals)
-      if userInterface.shouldShade():
-        glDrawArrays(GL_POLYGON, 0, len(points))
+      # if material, then draw shaded
+      if separator.hasMaterial():
+        glEnableClientState(GL_VERTEX_ARRAY)
+        glEnableClientState(GL_NORMAL_ARRAY)
+        glVertexPointerf(points)
+        glNormalPointerf(points2)
+        if userInterface.shouldShade():
+          glDrawArrays(GL_POLYGON, 0, len(points))
+        else:
+          glDrawArrays(GL_LINE_LOOP, 0, len(points))
+        glDisableClientState(GL_NORMAL_ARRAY)
+        glDisableClientState(GL_VERTEX_ARRAY)
+      # if no material, then use textures
       else:
-        glDrawArrays(GL_LINE_LOOP, 0, len(points))
-      glDisableClientState(GL_NORMAL_ARRAY)
-      glDisableClientState(GL_VERTEX_ARRAY)
+        pass
 
     glPopMatrix()
 
@@ -266,7 +272,8 @@ def initGL():
       camera.farD)
 
   # set light parameters
-  initLights()
+  if openInventor.hasLights():
+    initLights()
 
 def startOpenGL():
   """

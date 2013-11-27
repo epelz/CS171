@@ -21,33 +21,43 @@ class InventorData():
     return self.perspectiveCamera
   def getPointLights(self):
     return self.pointLights
+  def hasLights(self):
+    return len(self.pointLights) > 0
 
 class Separator():
-  def __init__(self, transforms, material, coordinate3, normal, indexedFaceSet):
+  def __init__(self, transforms, material, coordinate3, normal, indexedFaceSet, 
+      texture2, tcoordinate2):
     self.transforms = transforms
     self.material = material
     self.coordinate3 = coordinate3
     self.normal = normal
     self.indexedFaceSet = indexedFaceSet
+    self.texture2 = texture2
+    self.tcoordinate2 = tcoordinate2
   def __repr__(self):
-    return "[Separator: %s, %s, %s, %s, %s]" % \
-        (self.transforms, self.material, self.coordinate3, self.normal, self.indexedFaceSet)
+    return "[Separator: %s, %s, %s, %s, %s, %s, %s]" % \
+        (self.transforms, self.material, self.coordinate3, self.normal, self.indexedFaceSet, self.texture2, self.tcoordinate2)
 
   def getPolygons(self):
-    """Returns the (coordinate,normal) for each polygon.
+    """Returns the (coordinate,normal) or (coordinate, texcoords) for each polygon.
     Assumes 1:1 mapping of vertex to normals"""
     coords = self.coordinate3.getPoints()
     cFaces = self.indexedFaceSet.getCFaces()
-    norms = self.normal.getPoints()
-    nFaces = self.indexedFaceSet.getNFaces()
-    assert len(cFaces) == len(nFaces)
+
+    if self.normal:
+      coords2 = self.normal.getPoints()
+      faces2 = self.indexedFaceSet.getNFaces()
+    else:
+      coords2 = self.tcoordinate2.getPoints()
+      faces2 = self.indexedFaceSet.getTFaces()
+    assert len(cFaces) == len(faces2)
 
     polygons = []
     for faceNum in range(len(cFaces)):
-      assert len(cFaces[faceNum]) == len(nFaces[faceNum])
+      assert len(cFaces[faceNum]) == len(faces2[faceNum])
       polygons.append(zip(
         [coords[idx] for idx in cFaces[faceNum]],
-        [norms[idx] for idx in nFaces[faceNum]]))
+        [coords2[idx] for idx in faces2[faceNum]]))
     #import sys; print >>sys.stderr, polygons
     return polygons
   def getTransforms(self):
@@ -62,6 +72,12 @@ class Separator():
     return (self.transforms.multiplyNormalTransform()).mult(self.normal)
   def getMaterial(self):
     return self.material
+  def hasMaterial(self):
+    return self.material is not None
+  def getTexture2(self):
+    return self.texture2
+  def getTextureCoordinate2(self):
+    return self.tcoordinate2
 
 class PerspectiveCamera():
   def __init__(self, pos, orien, nearD, farD, left, right, top, bottom):
@@ -175,6 +191,24 @@ class Transform():
   def newScaleFactor(data):
     return Transform(Transform.scaleFactor, data)
 
+class Texture2():
+  def __init__(self, filename):
+    self.filename = filename
+  def __repr__(self):
+    return "[Texture2: %s]" % (str(self.filename))
+
+  def getFilename(self):
+    return self.filename
+
+class TextureCoordinate2():
+  def __init__(self, data):
+    self.points = data
+  def __repr__(self):
+    return "[TextureCoordinate2: %s]" % (str(self.points))
+
+  def getPoints(self):
+    return self.points
+
 class Coordinate3():
   def __init__(self, data):
     self.points = data
@@ -185,7 +219,7 @@ class Coordinate3():
     return self.points
 
 class IndexedFaceSet():
-  def __init__(self, coordData, normData):
+  def __init__(self, coordData, normData, textureData):
     def splitIntoFaces(data):
       """split data to faces, each separated by -1"""
       faces = [[]]
@@ -196,14 +230,17 @@ class IndexedFaceSet():
           faces.append([])
       return filter(lambda x: x, faces) # filter out any empty lists
 
-    self.cFaces = splitIntoFaces(coordData)
-    self.nFaces = splitIntoFaces(normData)
+    self.cFaces = splitIntoFaces(coordData) if coordData is not None else None
+    self.nFaces = splitIntoFaces(normData) if normData is not None else None
+    self.tFaces = splitIntoFaces(textureData) if textureData is not None else None
   def __repr__(self):
-    return "[IndexedFaceSet: cFaces: %s, nFaces: %s]" % (str(self.cFaces), str(self.nFaces))
+    return "[IndexedFaceSet: cFaces: %s, nFaces: %s, tFaces: %s]" % (str(self.cFaces), str(self.nFaces), str(self.tFaces))
   def getCFaces(self):
     return self.cFaces
   def getNFaces(self):
     return self.nFaces
+  def getTFaces(self):
+    return self.tFaces
 
 class Material():
   def __init__(self, aColor, dColor, sColor, shininess):

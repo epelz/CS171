@@ -5,6 +5,7 @@ import ply.lex as lex
 from ply.lex import TOKEN
 import ply.yacc as yacc
 
+from collections import defaultdict
 import sys
 import openInventor as oi
 
@@ -14,12 +15,15 @@ tokens = ('PCAMERA', 'POS', 'ORIENT', 'NDIST', 'FDIST', 'LEFT', 'RIGHT', \
     'COORD3', 'POINT', 'IFACESET', 'COORDINDEX', 'COMMA', 'LBRACE', 'RBRACE', \
     'LBRACKET', 'RBRACKET', 'NUMBER', 'POINTLIGHT', 'MATERIAL', 'ACOLOR', \
     'SCOLOR', 'DCOLOR', 'SHININESS', 'NORMAL', 'LOCATION', 'COLOR', 'VECTOR', \
-    'NORMINDEX')
+    'NORMINDEX', 'TEXTURE2', 'TCOORD2', 'STRING', 'TEXTUREINDEX', 'FILENAME')
 
 def simpleLexer():
   # set up regex for number parsing
   reals_noE = r'-?(\d*\.\d*|\d+)'
   reals = reals_noE + r'(e-?\d+)?'
+
+  # set up regex for string (no spaces) parsing
+  string = r'(\S+\.\S+)'
 
   t_PCAMERA = 'PerspectiveCamera'
   t_POS = 'position'
@@ -46,6 +50,7 @@ def simpleLexer():
   t_IFACESET = 'IndexedFaceSet'
   t_COORDINDEX = 'coordIndex'
   t_NORMINDEX = 'normalIndex'
+  t_TEXTUREINDEX = 'textureCoordIndex'
 
   t_COMMA = ','
   t_LBRACE = '{'
@@ -62,6 +67,10 @@ def simpleLexer():
   t_NORMAL = 'Normal'
   t_VECTOR = 'vector'
 
+  t_TEXTURE2 = 'Texture2'
+  t_FILENAME = 'filename'
+  t_TCOORD2 = 'TextureCoordinate2'
+
   # special characters to be ignored (spaces and tabs)
   t_ignore = ' \t\r'
 
@@ -71,6 +80,11 @@ def simpleLexer():
     # set the value of the token to its corresponding numerical value
     t.value = float(t.value)
     # once again return the token
+    return t
+
+  # how to parse string?
+  @TOKEN(string)
+  def t_STRING(t):
     return t
 
   # do nothing when we see a comment
@@ -184,6 +198,8 @@ def simpleParser():
     coordinate3 = None
     normal = None
     indexedFaceSet = None
+    texture2 = None
+    tcoord2 = None
     for group in p[3]:
       if isinstance(group, oi.Material):
         material = group
@@ -193,9 +209,13 @@ def simpleParser():
         indexedFaceSet = group
       elif isinstance(group, oi.Normal):
         normal = group
+      elif isinstance(group, oi.Texture2):
+        texture2 = group
+      elif isinstance(group, oi.TextureCoordinate2):
+        tcoord2 = group
       else:
         transforms.append(group)
-    p[0] = oi.Separator(transforms, material, coordinate3, normal, indexedFaceSet)
+    p[0] = oi.Separator(transforms, material, coordinate3, normal, indexedFaceSet, texture2, tcoord2)
   def p_sepitems(p):
     '''sepitems : sepitem
                 | sepitem sepitems'''
@@ -208,17 +228,20 @@ def simpleParser():
                | COORD3 open POINT sqopen triples sqclose close
                | IFACESET open ifslines close
                | MATERIAL open matlines close
-               | NORMAL open VECTOR sqopen triples sqclose close'''
+               | NORMAL open VECTOR sqopen triples sqclose close
+               | TEXTURE2 open FILENAME STRING close
+               | TCOORD2 open POINT sqopen doubles sqclose close'''
     type = p[1]
     if type == 'Transform':
       p[0] = oi.TransformBlock(p[3])
     elif type == 'Coordinate3':
       p[0] = oi.Coordinate3(p[5])
     elif type == 'IndexedFaceSet':
-      data = dict(p[3])
+      data = defaultdict(lambda: None, p[3])
       p[0] = oi.IndexedFaceSet(
           data['coordIndex'],
-          data['normalIndex'])
+          data['normalIndex'],
+          data['textureCoordIndex'])
     elif type == 'Material':
       # split and instantiate new object
       data = dict(p[3])
@@ -229,6 +252,20 @@ def simpleParser():
           data['shininess'])
     elif type == 'Normal':
       p[0] = oi.Normal(p[5])
+    elif type == 'Texture2':
+      p[0] = oi.Texture2(p[4])
+    elif type == 'TextureCoordinate2':
+      p[0] = oi.TextureCoordinate2(p[5])
+
+#  ## Parse texture filename (texture2) ##
+#  def p_texture2(p):
+#    '''texture2 : open FILENAME string close'''
+#    p[0] = (p[2], p[3])
+#
+#  ## Parse texture coordinates (texturecoordinate2) ##
+#  def p_tcoord2(p):
+#    '''tcoord2 : open POINT sqopen doubles sqclose close'''
+#    p[0] = oi.TextureCoordinate2(p[4])
 
   ## Parse transformation matrices ##
   def p_translines(p):
@@ -260,7 +297,8 @@ def simpleParser():
       p[0] = [p[1]]
   def p_ifsline(p):
     '''ifsline : COORDINDEX sqopen singles sqclose
-               | NORMINDEX sqopen singles sqclose'''
+               | NORMINDEX sqopen singles sqclose
+               | TEXTUREINDEX sqopen singles sqclose'''
     p[0] = (p[1], p[3])
 
   ## Parse Material ##
@@ -298,6 +336,16 @@ def simpleParser():
     if len(p) == 4: # triples : triple triples
       p[0] = [p[1]] + p[3]
     else:           # triples : triple
+      p[0] = [p[1]]
+  def p_double(p):
+    '''double : NUMBER NUMBER'''
+    p[0] = p[1:]
+  def p_doubles(p):
+    '''doubles : double
+               | double COMMA doubles'''
+    if len(p) == 4: # doubles : double doubles
+      p[0] = [p[1]] + p[3]
+    else:           # doubles : double
       p[0] = [p[1]]
   def p_quad(p):
     '''quad : NUMBER NUMBER NUMBER NUMBER'''
