@@ -23,6 +23,13 @@ class UserInterface():
     self.rotateX = 0
     self.rotateY = 0
 
+    self.animatedWater = True
+
+  def toggleWater(self):
+    self.animatedWater = not self.animatedWater
+  def shouldRenderWater(self):
+    return self.animatedWater
+
   def setShade(self, val):
     self.shade = val
   def shouldShade(self):
@@ -155,7 +162,8 @@ def redraw():
 
     glPopMatrix()
 
-  genWaves()
+  if glIsEnabled(GL_TEXTURE_2D) and userInterface.shouldRenderWater():
+    genWaves()
 
   glutSwapBuffers()
 
@@ -274,15 +282,18 @@ def keyfunc(key, x, y):
     userInterface.setShade(True)
     glShadeModel(GL_FLAT)
     glutPostRedisplay()
+  elif key == 'a' or key == 'a':
+    userInterface.toggleWater()
+    glutPostRedisplay()
 
 def mousefunc(button, state, x, y):
   holdingShift = glutGetModifiers() == GLUT_ACTIVE_SHIFT
   if state == GLUT_UP:
     userInterface.unset()
   elif state == GLUT_DOWN:
-    if button == GLUT_MIDDLE_BUTTON and holdingShift:
+    if button == GLUT_RIGHT_BUTTON and holdingShift:
       userInterface.setZoom(x, y)
-    elif button == GLUT_MIDDLE_BUTTON and not holdingShift:
+    elif button == GLUT_RIGHT_BUTTON and not holdingShift:
       userInterface.setPan(x, y)
     elif button == GLUT_LEFT_BUTTON:
       userInterface.setRotate(x, y)
