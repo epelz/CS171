@@ -5,6 +5,7 @@ import parseOpenInventor
 import sys
 import math
 import pygame
+from matrix import MatrixExtended
 
 class Modifier():
   NONE, PAN, ZOOM, ROTATE = range(4)
@@ -154,7 +155,86 @@ def redraw():
 
     glPopMatrix()
 
+  genWaves()
+
   glutSwapBuffers()
+
+def genWaves():
+  """ Generates and renders water waves which reflect a texture. """
+  def f(x, y, phi):
+    """ Height function for a given point (x, y) with phase shift phi.
+    H = beta * cos(alpha * (x^2 + y^2) - phi)
+      = beta * cos(alpha * r^2 - phi)
+    """
+    return beta * math.cos(alpha * (x ** 2 + y ** 2) - phi)
+  def N(x, y, phi):
+    """ Returns the normal vector for a given (x,y) with phase shift phi.
+    Analytically, this is simply the normal vector which is perpendicular
+    to both (x and y) tangent vectors of the height function. """
+    vec = MatrixExtended.getVector([
+        2 * alpha * beta * x * math.sin( alpha * (x ** 2 + y ** 2) - phi),
+        2 * alpha * beta * y * math.sin( alpha * (x ** 2 + y ** 2) - phi),
+        1])
+    return vec.getVectorUnit().getVectorList()
+  def expression(xi,yi):
+    """For a given x and y index, return its corresponding point and normal."""
+    x = xi * delta
+    y = yi * delta
+    phi = (w * it)
+    # note: flip x and y so that on floor of space
+    return ([x, -1.5 + 0.15 * f(x, y, phi), -y], N(x, y, phi))
+#    return ([x, y, -1.5 + 0.05 * f(x, y, phi)], N(x, y, phi))
+
+  ## wave constants
+  radiusSize = 2          # maximum wave radius size
+  delta = 0.15            # size of triangles to render
+  alpha = 2 * math.pi / 2 # alpha parameter in height function
+  beta = 0.15             # beta parameter in height function
+  w = 1                   # coefficient to phase shift in height function
+
+  ## split the maximum radius into multiple parts, and generate corresponding
+  ## points and normal vectors.
+  numParts = int(radiusSize / delta)
+  waveDict = dict([((xi,yi), expression(xi, yi))
+                for xi in range(-numParts, numParts + 1)
+                for yi in range(-numParts, numParts + 1)])
+  ## based on these points and normal vectors, split into renderable triangles
+  # note: using triangles rather than polygons because they're more efficient
+  triangles = []
+  for xi in range(-numParts, numParts):
+    for yi in range(-numParts, numParts):
+      triangles.append(
+          [waveDict[(xi, yi)],
+           waveDict[(xi+1, yi)],
+           waveDict[(xi+1, yi+1)]])
+      triangles.append(
+          [waveDict[(xi, yi)],
+           waveDict[(xi+1, yi+1)],
+           waveDict[(xi, yi+1)]])
+
+  ## initialize the texture and render the waves
+  glPushMatrix()
+  tex = initTexture('sky.png')
+
+  glEnable(GL_TEXTURE_GEN_S)
+  glEnable(GL_TEXTURE_GEN_T)
+  glBindTexture(GL_TEXTURE_2D, tex)
+
+  for triangle in triangles:
+    points, normals = zip(*triangle)
+
+    glEnableClientState(GL_VERTEX_ARRAY)
+    glEnableClientState(GL_NORMAL_ARRAY)
+    glVertexPointerf(points)
+    glNormalPointerf(normals)
+    glDrawArrays(GL_TRIANGLES, 0, len(points))
+    glDisableClientState(GL_NORMAL_ARRAY)
+    glDisableClientState(GL_VERTEX_ARRAY)
+
+  glDisable(GL_TEXTURE_GEN_S)
+  glDisable(GL_TEXTURE_GEN_T)
+
+  glPopMatrix()
 
 def resize(w, h):
   """
@@ -212,6 +292,13 @@ def motionfunc(x, y):
 
   glutPostRedisplay()
 
+def idlefunc():
+  """For each iteration, increment counter and re-render (for waves update)."""
+  global it
+  it += 1
+
+  glutPostRedisplay()
+
 def initLights():
   """
   Sets up an OpenGL light.  This only needs to be called once
@@ -260,7 +347,6 @@ def initTexture(imagePath):
   """
   texture = pygame.image.load(imagePath)
   textureData = pygame.image.tostring(texture, "RGBA", 1)
-
   tWidth = texture.get_width()
   tHeight = texture.get_height()
 
@@ -270,6 +356,8 @@ def initTexture(imagePath):
       GL_UNSIGNED_BYTE, textureData)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+  glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
+  glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_SPHERE_MAP)
 
   return glTex
 
@@ -327,12 +415,17 @@ def startOpenGL():
   global userInterface
   userInterface = UserInterface()
 
+  # track number of iterations that have gone by, for wave rendering
+  global it
+  it = 0
+
   # set up GLUT callbacks.
   glutDisplayFunc(redraw)
   glutReshapeFunc(resize)
   glutKeyboardFunc(keyfunc)
   glutMouseFunc(mousefunc)
   glutMotionFunc(motionfunc)
+  glutIdleFunc(idlefunc)
 
   glutMainLoop()
 
