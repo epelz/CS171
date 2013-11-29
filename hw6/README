@@ -1,0 +1,40 @@
+Homework 6
+CS 171, Fall 2013
+Eric Pelz
+
+This assignment extends the shaded renderer created in Homework 4 to load and
+display textures on the objects, as well as adds an animated water-like surface.
+The input format is OpenInventor, as in previous homeworks. If the input file
+contains Textures, then these are used instead of shading. Otherwise, shading (as
+in homework 4) works as expected. If textures are used, then an additional animated
+water-like surface is on the bottom of the screen.
+
+PreLab Questions:
+  1) The range [0, 1] x [0, 1] of texture coordinates corresponds to the whole
+     texture image.
+  2) In OpenGL's sphere mapping, texture coordinates are determinated using
+     normal vectors and position. In simple terms, it is as if there is an
+     infinitely big sphere surrounding the surface, and the normal vector of
+     a given point points to the texture coordinate.
+
+All previous controls work. For a recap:
+  - [TEXTURE ONLY] a - Toggle animated water on bottom of screen
+  - [SHADING ONLY] w - Toggle wireframe mode
+  - [SHADING ONLY] f - Toggle flat shading mode
+  - [SHADING ONLY] g - Toggle Gouraud shading mode
+
+The program can also rotate, translate, and zoom the object:
+- Rotate by clicking and dragging using the left mouse button. This uses a simple approach
+  by rotating the image by an amount proportional to the length of the mouse drag.
+- Translate by clicking and dragging with the right mouse button. The magnitude is proportional
+  to the length of the mouse drag, and direction that of the mouse drag.
+- Zoom by pressing shift and dragging with the right mouse button. The magnitude is proportional
+  to the vertical displacement of the mouse drag.
+Note: Translate and zoom switched to use right mouse button, for easier testing with laptops.
+
+The program can be envoked using `python oglTexRenderer.py xRes yRes < iv-file`.
+
+[EXTRA CREDIT?] Toggle the animated water using the `a` key
+Does not display animated water if OpenInventor file uses shading (wouldn't make sense)
+
+The code was testing using the test files on the course website, and all seems to work as desired.
