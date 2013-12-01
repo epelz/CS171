@@ -1,7 +1,7 @@
 from OpenGL.GL import *
 from OpenGL.GLUT import *
 from OpenGL.GLU import *
-import parseOpenInventor
+import parseKeyFrameScript
 import sys
 import math
 
@@ -303,16 +303,16 @@ def startOpenGL():
 
 if __name__=='__main__':
   # read and parse commandline arguments
-  if len(sys.argv) != 3:
+  if len(sys.argv) != 1:
     print "Error: Incorrect number of parameters. Please call using:"
-    print "\t$ python oglRenderer.py xRes yRes < input.iv"
+    print "\t$ python keyframe.py < <script-file-name>"
     exit(-1)
-  global xRes, yRes
-  xRes, yRes = map(int, sys.argv[1:3])
 
   # read and parse the OpenInventor file
   data = ''.join(sys.stdin)
-  global openInventor
-  openInventor = parseOpenInventor.parse(data)
+  global keyFrame
+  keyFrame = parseKeyFrameScript.parse(data)
 
-  startOpenGL()
+  print keyFrame
+
+  #startOpenGL()
