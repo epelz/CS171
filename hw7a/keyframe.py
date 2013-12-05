@@ -9,7 +9,7 @@ import time
 
 class UserInterface():
   def __init__(self):
-    self.zoom = 0
+    self.zoom = 6.0
     self.rotate = 0
     self.isPlay = True
     self.loopEnabled = True
@@ -22,16 +22,19 @@ class UserInterface():
     return int(self.getTextInputString()) if len(self.textInput) > 0 else 0
 
   def zoomIn(self):
-    self.zoom += 0.1
+    self.zoom += 0.25
   def zoomOut(self):
-    self.zoom -= 0.1
+    self.zoom -= 0.25
   def getZoom(self):
     return self.zoom
+  def getFrustumArgs(self):
+    amt = max(self.zoom, 0.25)
+    return [-amt, amt, -amt, amt, 1, 1000]
 
   def rotateRight(self):
-    self.rotate += 0.1
+    self.rotate += 5
   def rotateLeft(self):
-    self.rotate -= 0.1
+    self.rotate -= 5
   def getRotate(self):
     return self.rotate
 
@@ -56,19 +59,13 @@ def redraw():
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
   quadric = gluNewQuadric()
 
+  # note: parameters chosen semi-arbitrarily, so that animation looks nice
   radius = 0.15
   height = 3
 
-  # note: arbitrarily chose parameters such that animation fit in frame
   glMatrixMode(GL_PROJECTION)
   glLoadIdentity()
-  glFrustum(
-      -6,
-      6,
-      -6,
-      6,
-      1,
-      10)
+  glFrustum(*userInterface.getFrustumArgs())
 
   glMatrixMode(GL_MODELVIEW)
   glLoadIdentity()
@@ -76,7 +73,10 @@ def redraw():
       crSpline.translationData[0][0],
       crSpline.translationData[0][1],
       crSpline.translationData[0][2],
-      1, userInterface.rotate, 1)
+      1, 0, 1)
+
+  # perform camera rotations due to user input
+  glRotatef(userInterface.getRotate(), 0, 1, 0)
 
   glPushMatrix()
 
@@ -91,6 +91,7 @@ def redraw():
   glScalef(*(crSpline.scaleData[fr]))
 
   ## DRAW I-bar ##
+  glTranslatef(height,0,0) # shift so animation is nicer
   # middle part of I
   glColor3f(1, 0, 0)
   glPushMatrix()
@@ -215,6 +216,20 @@ def keyfunc(key, x, y):
     print "Note: Valid frame numbers are 0-%d" % (keyFrame.total_num - 1)
     print
 
+def specialkeyfunc(key, x, y):
+  if key == GLUT_KEY_UP:
+    userInterface.zoomIn()
+    glutPostRedisplay()
+  elif key == GLUT_KEY_DOWN:
+    userInterface.zoomOut()
+    glutPostRedisplay()
+  elif key == GLUT_KEY_LEFT:
+    userInterface.rotateLeft()
+    glutPostRedisplay()
+  elif key == GLUT_KEY_RIGHT:
+    userInterface.rotateRight()
+    glutPostRedisplay()
+
 def idlefunc():
   """For each iteration, increment counter and re-render (for waves update)."""
   if not userInterface.shouldPlay():
@@ -272,6 +287,7 @@ def startOpenGL():
   glutDisplayFunc(redraw)
   glutReshapeFunc(resize)
   glutKeyboardFunc(keyfunc)
+  glutSpecialFunc(specialkeyfunc)
   glutIdleFunc(idlefunc)
 
   glutMainLoop()
