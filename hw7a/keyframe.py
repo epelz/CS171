@@ -22,14 +22,14 @@ class UserInterface():
     return int(self.getTextInputString()) if len(self.textInput) > 0 else 0
 
   def zoomIn(self):
-    self.zoom += 0.25
-  def zoomOut(self):
     self.zoom -= 0.25
+  def zoomOut(self):
+    self.zoom += 0.25
   def getZoom(self):
     return self.zoom
   def getFrustumArgs(self):
     amt = max(self.zoom, 0.25)
-    return [-amt, amt, -amt, amt, 1, 1000]
+    return [-amt, amt, -amt, amt, 1, 5000]
 
   def rotateRight(self):
     self.rotate += 5
@@ -76,7 +76,7 @@ def redraw():
       1, 0, 1)
 
   # perform camera rotations due to user input
-  glRotatef(userInterface.getRotate(), 0, 1, 0)
+  glRotatef(userInterface.getRotate(), 1, 0, 0)
 
   glPushMatrix()
 
