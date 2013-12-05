@@ -1,0 +1,41 @@
+Homework 7a
+CS 171, Fall 2013
+Eric Pelz
+
+This assignments implements keyframe animation, which allows one to specify
+pose (position, orientation, etc.) of an object at several *key* frames. This
+program then uses Catmull-Rom cubic spline to determine how the animation should
+look in-between the frames. For visualization purposes, the animation is tested
+using an I-bar object, made of cylinder segments of different colors to more
+easily see the effects of rotations.
+
+PreLab Questions:
+  1) Spline interpolation has better results than other methods (e.g. linear interpolation),
+     because it has smaller error in general, thus the interpolated data is smoother. Because
+     cubic splines are cubic and twice differentiable, the data is much smoother after
+     interpolation. Additionally, the cubic nature of the interpolation makes sense for keyframes,
+     which generally have a more "flow-y" nature.
+  2) The kinematic function is hard to invert because it is generally highly nonlinear. Thus, it is
+     mathematically difficult to invert such a function. A solution is to approximate the kinematic
+     function as locally linear, so we can therefore use the Jacobian to approximate the inverse
+     kinematic function.
+
+Program controls:
+  P - play
+  S - stop
+  F - Move forward one frame
+  R - Move backwards one frame
+  L - Toggle loop mode on/off
+  J - Jump to a specific frame. Note that the user enters a frame number after pressing J.
+      This frame number is typed directly in the OpenGL window. Helpful instructions and
+      progress message (e.g. frame number typed so far) is shown in the shell.
+  0 - Jump to the first frame.
+
+  Up    - Move the camera towards the origin
+  Down  - Move the camera away from the origin
+  Left  - Rotate the camera to the left around the origin
+  Right - Rotate the camera to the right around the origin
+
+The program can be envoked using `python keyframe.py < script-file`.
+
+The code was testing using the test file on the moodle, and all seems to work as desired.
