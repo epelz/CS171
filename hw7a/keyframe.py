@@ -6,7 +6,6 @@ from catmullRomSpline import CRSpline
 import sys
 import math
 import time
-from Tkinter import * # for dialog to ask frame number
 
 class UserInterface():
   def __init__(self):
@@ -14,6 +13,13 @@ class UserInterface():
     self.rotate = 0
     self.isPlay = True
     self.loopEnabled = True
+
+    self.textInput = None
+
+  def getTextInputString(self):
+    return ''.join(self.textInput)
+  def getTextInputInt(self):
+    return int(self.getTextInputString()) if len(self.textInput) > 0 else 0
 
   def zoomIn(self):
     self.zoom += 0.1
@@ -96,7 +102,7 @@ def redraw():
   glColor3f(0, 1, 0)
   glRotate(90, 1, 0, 0)
   gluCylinder(quadric, radius, radius, height / 2, 100, 100)
-  glColor3f(0, 0.5, 0)
+  glColor3f(0, 0.5, 1)
   glRotate(180, 1, 0, 0)
   gluCylinder(quadric, radius, radius, height / 2, 100, 100)
   glPopMatrix()
@@ -144,6 +150,38 @@ def keyfunc(key, x, y):
   """
   global fr
 
+  ## Parse text input for frame jumping... ##
+  if userInterface.textInput is not None:
+    changedFrame = False
+    if key.isdigit() and int(key) >= 0 and int(key) <= 9:
+      userInterface.textInput.append(key)
+    elif key == '\x7F' or key == '\x08':
+      userInterface.textInput = userInterface.textInput[:-1]
+    else:
+      if key == '\x0D' and len(userInterface.textInput) > 0:
+        frame = userInterface.getTextInputInt()
+        if frame < keyFrame.total_num:
+          changedFrame = True
+          fr = frame
+          glutPostRedisplay()
+
+      userInterface.setPlay(True)
+      userInterface.textInput = None
+
+    # update terminal output to reflect text input thus far
+    if userInterface.textInput is not None:
+      sys.stdout.write("...Jump to frame: %-10s (enter to jump)\r" % (userInterface.getTextInputString()))
+      sys.stdout.flush()
+    elif changedFrame:
+      sys.stdout.write("Jumped to frame %-30s\n" % (fr))
+      sys.stdout.flush()
+    else:
+      sys.stdout.write("Jumping to frame cancelled. Continuing from frame %-10s\n" % (fr))
+      sys.stdout.flush()
+
+    return
+
+  ## Parse other input... ##
   if key == 27 or key == 'q' or key == 'Q':
     exit(0)
   elif key == 'p' or key == 'P':
@@ -168,22 +206,21 @@ def keyfunc(key, x, y):
     fr = 0
     glutPostRedisplay()
   elif key == 'j' or key == 'J':
-    master = Tk()
-    master.title('Enter frame to jump to')
-    e = Entry(master).pack(side=TOP, padx=10, pady=10)
-    def setFrame(): fr = e.get()
-    b = button(master, text="Jump to Frame", width=10,
-        command=setFrame)
-    master.mainloop()
-#lambda: fr = e.get()))
-    b.pack()
+    userInterface.textInput = []
+    userInterface.setPlay(False)
+
+    print
+    print "Enter the frame number you would like to jump to!"
+    print "Type the number directly into the OpenGL window, and press enter to submit."
+    print "Note: Valid frame numbers are 0-%d" % (keyFrame.total_num - 1)
+    print
 
 def idlefunc():
   """For each iteration, increment counter and re-render (for waves update)."""
   if not userInterface.shouldPlay():
     return
 
-  time.sleep(0.1)
+  time.sleep(0.15)
 
   global fr
   if fr == keyFrame.total_num - 1:

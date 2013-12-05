@@ -20,7 +20,7 @@ def vec4Unit(vec):
   assert len(vec) == 4 # assert 4-vector
   mag = vecMagnitude(vec)
   unitVec = map(lambda x: x / mag, vec)
-  assert 1.0 - vecMagnitude(unitVec) < 1e5 # assert unit vector
+  assert abs(1.0 - vecMagnitude(unitVec)) < 1e5 # assert unit vector
   return unitVec
 def fromQuaternion(inVec4):
   return inVec4[1:] + [math.degrees(2 * math.acos(inVec4[0]))]
