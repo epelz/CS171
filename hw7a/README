@@ -27,8 +27,8 @@ Program controls:
   R - Move backwards one frame
   L - Toggle loop mode on/off
   J - Jump to a specific frame. Note that the user enters a frame number after pressing J.
-      This frame number is typed directly in the OpenGL window. Helpful instructions and
-      progress message (e.g. frame number typed so far) is shown in the shell.
+      This frame number is typed directly in the OpenGL window, and is submitted with the enter key.
+      Helpful instructions and progress message (e.g. frame number typed so far) is shown in the shell.
   0 - Jump to the first frame.
 
   Up    - Move the camera towards the origin
