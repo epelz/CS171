@@ -1,0 +1,16 @@
+Homework 8
+CS 171, Fall 2013
+Eric Pelz
+
+This assignment draws a rippling environment-mapped water surface with leaves blended
+on top using a vertex shader and a fragment shader. Uses water and leaf textures
+provided on course website. Additionally, the right mouse button toggles the
+render mode for the normals, between per-vertex normal calculations (default)
+and per-fragment normal calculations. The per-fragment calculations look smoother.
+
+The program was tested in the computer lab, and can be compiled using `make`. It takes
+the window size via commandline argument, so it can be envoked using:
+`./glslRenderer <xRes> <yRes>`.
+
+The code was tested and compared to the screenshot on the course website, and
+all seems to work as desired.
